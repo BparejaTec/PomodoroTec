@@ -4,51 +4,51 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
+import androidx.activity.viewModels
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
-import androidx.activity.viewModels
 
 class MainActivity : ComponentActivity() {
 
     private val viewModel: PomodoroViewModel by viewModels()
 
+    companion object {
+        const val CHANNEL_ID = "pomodoro_channel"
+        const val NOTIFICATION_ID = 1
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        createNotificationChannel()
         setContent {
             PomodoroScreen(viewModel)
         }
-        // Crear el canal de notificaciones
-        createNotificationChannel()
-        // Solicitar permiso para notificaciones en Android 13+
-        requestNotificationPermission()
-
-        // Manejar las acciones de pausa y reinicio desde la notificación
-        handleIntentAction(intent)
-    }
-
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
         handleIntentAction(intent)
     }
 
     private fun handleIntentAction(intent: Intent?) {
-        when (intent?.action) {
-            "PAUSE_ACTION" -> viewModel.pauseTimer()
-            "RESET_ACTION" -> viewModel.resetTimer()
+        intent?.let {
+            when (it.action) {
+                "PAUSE_ACTION" -> {
+                    if (viewModel.isRunning.value == true) {
+                        viewModel.pauseTimer()
+                    } else {
+                        viewModel.startTimer()
+                    }
+                }
+                "RESET_ACTION" -> viewModel.resetTimer()
+            }
         }
     }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Canal Pomodoro"
-            val descriptionText = "Notificaciones para el temporizador Pomodoro"
+            val name = "Pomodoro Notifications"
+            val descriptionText = "Channel for Pomodoro notifications"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
@@ -59,24 +59,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(
-                    this, android.Manifest.permission.POST_NOTIFICATIONS
-                ) != PackageManager.PERMISSION_GRANTED
-            ) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
-                    REQUEST_CODE
-                )
-            }
-        }
-    }
-
-    companion object {
-        const val CHANNEL_ID = "pomodoro_channel"
-        private const val REQUEST_CODE = 1
-        const val NOTIFICATION_ID = 1
+    // Llama a esta función desde fuera para manejar los intents manualmente
+    fun updateWithIntent(intent: Intent?) {
+        handleIntentAction(intent)
     }
 }

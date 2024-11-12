@@ -2,15 +2,7 @@ package com.bpareja.pomodorotec.pomodoro
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -37,17 +29,16 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF0F0)) // Fondo muy claro
+            .background(Color(0xFFFFF0F0))
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Espacio para imagen (puedes reemplazar "R.drawable.pomodoro_image" por el recurso que prefieras)
         Image(
             painter = painterResource(id = R.drawable.pomodoro),
             contentDescription = "Imagen de Pomodoro",
             modifier = Modifier
-                .size(120.dp) // Tamaño de la imagen
+                .size(120.dp)
                 .padding(bottom = 16.dp)
         )
 
@@ -55,7 +46,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             text = "Método Pomodoro",
             fontSize = 30.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFB22222), // Rojo intenso para el texto
+            color = Color(0xFFB22222),
             textAlign = TextAlign.Center
         )
 
@@ -64,7 +55,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
         Text(
             text = "Alterna intervalos de 25 minutos de concentración y 5 minutos de descanso para mejorar tu productividad.",
             fontSize = 16.sp,
-            color = Color(0xFFB22222), // Rojo intenso
+            color = Color(0xFFB22222),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 20.dp)
         )
@@ -78,7 +69,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             },
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFB22222), // Rojo intenso
+            color = Color(0xFFB22222),
             textAlign = TextAlign.Center
         )
 
@@ -88,7 +79,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             text = timeLeft,
             fontSize = 48.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFFB22222), // Rojo intenso
+            color = Color(0xFFB22222),
             textAlign = TextAlign.Center
         )
 
@@ -104,15 +95,19 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             }
             Spacer(modifier = Modifier.width(16.dp))
 
-            /*Button(
-                onClick = { viewModel.pauseTimer() },
-                enabled = isRunning,
+            Button(
+                onClick = { if (isRunning) viewModel.pauseTimer() else viewModel.startTimer() },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text("Pausar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (isRunning) "Pausar" else "Reanudar",
+                    color = Color(0xFFB22222),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(modifier = Modifier.width(16.dp))
-*/
+
             Button(
                 onClick = { viewModel.resetTimer() },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
