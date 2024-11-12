@@ -3,6 +3,7 @@ package com.bpareja.pomodorotec
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -14,11 +15,9 @@ import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
 import androidx.activity.viewModels
 
-
 class MainActivity : ComponentActivity() {
 
     private val viewModel: PomodoroViewModel by viewModels()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,8 +29,21 @@ class MainActivity : ComponentActivity() {
         // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
 
-        }
+        // Manejar las acciones de pausa y reinicio desde la notificación
+        handleIntentAction(intent)
+    }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntentAction(intent)
+    }
+
+    private fun handleIntentAction(intent: Intent?) {
+        when (intent?.action) {
+            "PAUSE_ACTION" -> viewModel.pauseTimer()
+            "RESET_ACTION" -> viewModel.resetTimer()
+        }
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
