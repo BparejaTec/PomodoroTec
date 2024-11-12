@@ -1,6 +1,8 @@
+// PomodoroViewModel.kt
 package com.bpareja.pomodorotec.pomodoro
 
 import android.app.Application
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -32,21 +34,29 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     val currentPhase: LiveData<Phase> = _currentPhase
 
     private var countDownTimer: CountDownTimer? = null
-    private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
+    private var timeRemainingInMillis: Long = 25 * 60 * 1000L
 
     fun startFocusSession() {
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L // Ajusta a 2 minutos para pruebas
+        timeRemainingInMillis = 25 * 60 * 1000L
         _timeLeft.value = "25:00"
-        showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
+        showPhaseNotification(
+            "¡Comienza tu sesión de concentración! 🎯",
+            "Mantén el enfoque durante los próximos 25 minutos.",
+            true
+        )
         startTimer()
     }
 
     private fun startBreakSession() {
         _currentPhase.value = Phase.BREAK
-        timeRemainingInMillis = 5 * 60 * 1000L // 5 minutos para descanso
+        timeRemainingInMillis = 5 * 60 * 1000L
         _timeLeft.value = "05:00"
-        showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
+        showPhaseNotification(
+            "¡Tiempo de descanso! 🌟",
+            "Toma un descanso de 5 minutos. ¡Te lo has ganado!",
+            true
+        )
         startTimer()
     }
 
@@ -60,13 +70,32 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 val minutes = (millisUntilFinished / 1000) / 60
                 val seconds = (millisUntilFinished / 1000) % 60
                 _timeLeft.value = String.format("%02d:%02d", minutes, seconds)
+
+                // Actualizar notificación cada minuto
+                if (seconds == 0L) {
+                    updateTimerNotification(minutes)
+                }
             }
 
             override fun onFinish() {
                 _isRunning.value = false
                 when (_currentPhase.value) {
-                    Phase.FOCUS -> startBreakSession()
-                    Phase.BREAK -> startFocusSession()
+                    Phase.FOCUS -> {
+                        showPhaseNotification(
+                            "¡Excelente trabajo! 🎉",
+                            "Has completado tu sesión de concentración. ¡Toma un merecido descanso!",
+                            false
+                        )
+                        startBreakSession()
+                    }
+                    Phase.BREAK -> {
+                        showPhaseNotification(
+                            "¡Fin del descanso! 🔄",
+                            "¿Listo para otra sesión productiva?",
+                            false
+                        )
+                        startFocusSession()
+                    }
                     else -> {}
                 }
             }
@@ -76,6 +105,11 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     fun pauseTimer() {
         countDownTimer?.cancel()
         _isRunning.value = false
+        showPhaseNotification(
+            "Temporizador en pausa ⏸️",
+            "No olvides retomar tu sesión",
+            true
+        )
     }
 
     fun resetTimer() {
@@ -84,21 +118,44 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _currentPhase.value = Phase.FOCUS
         timeRemainingInMillis = 25 * 60 * 1000L
         _timeLeft.value = "25:00"
-        showNotification("Temporizador Reiniciado", "La sesión de concentración ha sido reiniciada.")
+        showPhaseNotification(
+            "Temporizador reiniciado 🔄",
+            "¡Listo para comenzar una nueva sesión!",
+            true
+        )
     }
 
-    private fun showNotification(title: String, message: String) {
-        val pauseIntent = Intent(context, MainActivity::class.java).apply {
-            action = "PAUSE_ACTION"
+    private fun updateTimerNotification(minutes: Long) {
+        val phaseText = if (_currentPhase.value == Phase.FOCUS) "concentración" else "descanso"
+        showPhaseNotification(
+            "Pomodoro en progreso ⏱️",
+            "Quedan $minutes minutos de $phaseText",
+            true
+        )
+    }
+
+    private fun showPhaseNotification(title: String, message: String, showActions: Boolean) {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val pausePendingIntent: PendingIntent = PendingIntent.getActivity(
-            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Crear intents para las acciones
+        val pauseIntent = Intent(context, MainActivity::class.java).apply {
+            action = "PAUSE_ACTION"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
         val resetIntent = Intent(context, MainActivity::class.java).apply {
             action = "RESET_ACTION"
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
-        val resetPendingIntent: PendingIntent = PendingIntent.getActivity(
+
+        val pausePendingIntent = PendingIntent.getActivity(
+            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
+        )
+        val resetPendingIntent = PendingIntent.getActivity(
             context, 2, resetIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -106,10 +163,26 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             .setSmallIcon(R.drawable.pomodoro)
             .setContentTitle(title)
             .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .addAction(R.drawable.ic_launcher_background, "Pausar", pausePendingIntent)
-            .addAction(R.drawable.ic_launcher_foreground, "Reiniciar", resetPendingIntent)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setOngoing(true)
+
+        if (showActions) {
+            if (_isRunning.value == true) {
+                builder.addAction(
+                    R.drawable.pomodoro,
+                    "Pausar",
+                    pausePendingIntent
+                )
+            }
+            builder.addAction(
+                R.drawable.pomodoro,
+                "Reiniciar",
+                resetPendingIntent
+            )
+        }
 
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
@@ -121,5 +194,12 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             }
             notify(MainActivity.NOTIFICATION_ID, builder.build())
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        countDownTimer?.cancel()
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager.cancel(MainActivity.NOTIFICATION_ID)
     }
 }

@@ -91,7 +91,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 enabled = !isRunning,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text("Iniciar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Iniciar", color = Color(0xFFB22222), fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -102,7 +102,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 Text(
                     if (isRunning) "Pausar" else "Reanudar",
                     color = Color(0xFFB22222),
-                    fontSize = 18.sp,
+                    fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -112,7 +112,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 onClick = { viewModel.resetTimer() },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
-                Text("Reiniciar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Reiniciar", color = Color(0xFFB22222), fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
