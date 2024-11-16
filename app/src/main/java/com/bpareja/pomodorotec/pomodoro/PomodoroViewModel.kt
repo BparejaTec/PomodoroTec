@@ -92,6 +92,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         }.start()
     }
 
+
+
+
     // Pausa el temporizador
     fun pauseTimer() {
         countDownTimer?.cancel()

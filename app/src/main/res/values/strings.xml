@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">PomodoroTec</string>
+    <string name="method_title">Método Pomodoro</string>
+    <string name="description">Alterna intervalos de 25 minutos de concentración y 5 minutos de descanso para mejorar tu productividad.</string>
+    <string name="focus_time">Tiempo de concentración</string>
+    <string name="break_time">Tiempo de descanso</string>
+    <string name="start">Iniciar</string>
+    <string name="reset">Reiniciar</string>
+    <string name="change_language">Cambiar idioma</string>
+    <string name="app_name" />
 </resources>

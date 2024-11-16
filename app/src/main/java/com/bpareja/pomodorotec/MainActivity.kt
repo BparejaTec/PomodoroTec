@@ -30,7 +30,7 @@ class MainActivity : ComponentActivity() {
         // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
 
-        }
+    }
 
 
     private fun createNotificationChannel() {

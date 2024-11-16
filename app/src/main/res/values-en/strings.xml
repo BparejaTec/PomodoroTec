@@ -1,0 +1,10 @@
+<resources>
+    <string name="method_title">Pomodoro Method</string>
+    <string name="description">Alternate 25-minute focus and 5-minute break intervals to boost your productivity.</string>
+    <string name="focus_time">Focus Time</string>
+    <string name="break_time">Break Time</string>
+    <string name="start">Start</string>
+    <string name="reset">Reset</string>
+    <string name="change_language">Change Language</string>
+    <string name="app_name" />
+</resources>
