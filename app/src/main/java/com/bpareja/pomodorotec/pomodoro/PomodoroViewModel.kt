@@ -14,6 +14,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.bpareja.pomodorotec.MainActivity
 import com.bpareja.pomodorotec.R
+import com.bpareja.pomodorotec.utils.PreferencesManager
 
 enum class Phase {
     FOCUS, BREAK
@@ -32,6 +33,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     }
 
     private val context = getApplication<Application>().applicationContext
+    private val preferencesManager = PreferencesManager(context)
 
     private val _timeLeft = MutableLiveData("25:00")
     val timeLeft: LiveData<String> = _timeLeft
@@ -46,14 +48,19 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     val isSkipBreakButtonVisible: LiveData<Boolean> = _isSkipBreakButtonVisible
 
     private var countDownTimer: CountDownTimer? = null
-    private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
+
+    // Las duraciones se obtienen desde PreferencesManager para personalización
+    private var sessionDurationInMillis: Long = preferencesManager.getSessionDuration() * 60 * 1000L
+    private var breakDurationInMillis: Long = preferencesManager.getBreakDuration() * 60 * 1000L
+    private var timeRemainingInMillis: Long = sessionDurationInMillis // Valor inicial basado en el tiempo de sesión
 
     // Función para iniciar la sesión de concentración
     fun startFocusSession() {
         countDownTimer?.cancel() // Cancela cualquier temporizador en ejecución
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L // Restablece el tiempo de enfoque a 25 minutos
-        _timeLeft.value = "25:00"
+        sessionDurationInMillis = preferencesManager.getSessionDuration() * 60 * 1000L // Carga personalizada
+        timeRemainingInMillis = sessionDurationInMillis
+        _timeLeft.value = formatTime(sessionDurationInMillis)
         _isSkipBreakButtonVisible.value = false // Ocultar el botón si estaba visible
         showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
         startTimer() // Inicia el temporizador con el tiempo de enfoque actualizado
@@ -62,11 +69,40 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     // Función para iniciar la sesión de descanso
     private fun startBreakSession() {
         _currentPhase.value = Phase.BREAK
-        timeRemainingInMillis = 5 * 60 * 1000L // 5 minutos para descanso
-        _timeLeft.value = "05:00"
+        breakDurationInMillis = preferencesManager.getBreakDuration() * 60 * 1000L // Carga personalizada
+        timeRemainingInMillis = breakDurationInMillis
+        _timeLeft.value = formatTime(breakDurationInMillis)
         _isSkipBreakButtonVisible.value = true // Mostrar el botón durante el descanso
         showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
         startTimer()
+    }
+
+    // Función para recargar configuraciones desde las preferencias
+    fun reloadDurations() {
+        sessionDurationInMillis = preferencesManager.getSessionDuration() * 60 * 1000L
+        breakDurationInMillis = preferencesManager.getBreakDuration() * 60 * 1000L
+        if (_currentPhase.value == Phase.FOCUS) {
+            timeRemainingInMillis = sessionDurationInMillis
+            _timeLeft.value = formatTime(sessionDurationInMillis)
+        } else {
+            timeRemainingInMillis = breakDurationInMillis
+            _timeLeft.value = formatTime(breakDurationInMillis)
+        }
+    }
+
+    // Función para guardar configuraciones
+    fun updateDurations(sessionMinutes: Int, breakMinutes: Int) {
+        preferencesManager.setSessionDuration(sessionMinutes)
+        preferencesManager.setBreakDuration(breakMinutes)
+        pauseTimer() // Detener el temporizador
+        reloadDurations() // Reflejar inmediatamente
+    }
+
+    // Función para reiniciar a valores por defecto
+    fun resetToDefaultDurations() {
+        preferencesManager.setSessionDuration(25)
+        preferencesManager.setBreakDuration(5)
+        reloadDurations()
     }
 
     // Inicia o reanuda el temporizador
@@ -103,8 +139,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         countDownTimer?.cancel()
         _isRunning.value = false
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L // Restablece a 25 minutos
-        _timeLeft.value = "25:00"
+        sessionDurationInMillis = preferencesManager.getSessionDuration() * 60 * 1000L // Carga personalizada
+        timeRemainingInMillis = sessionDurationInMillis
+        _timeLeft.value = formatTime(sessionDurationInMillis)
         _isSkipBreakButtonVisible.value = false // Ocultar el botón al restablecer
     }
 
@@ -141,5 +178,12 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             }
             notify(MainActivity.NOTIFICATION_ID, builder.build())
         }
+    }
+
+    // Método para formatear el tiempo en formato MM:SS
+    private fun formatTime(millis: Long): String {
+        val minutes = (millis / 1000) / 60
+        val seconds = (millis / 1000) % 60
+        return String.format("%02d:%02d", minutes, seconds)
     }
 }

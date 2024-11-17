@@ -13,6 +13,11 @@ import androidx.core.content.ContextCompat
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.bpareja.pomodorotec.settings.SettingsScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -22,16 +27,29 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        viewModel.resetToDefaultDurations() // Restablecer valores
+
         setContent {
-            PomodoroScreen(viewModel)
+            var showSettings by remember { mutableStateOf(false) }
+
+            if (showSettings) {
+                SettingsScreen(
+                    onBackClick = { showSettings = false },
+                    onSaveClick = { sessionMinutes, breakMinutes ->
+                        viewModel.updateDurations(sessionMinutes, breakMinutes) // Guardar y actualizar
+                    }
+                )
+            } else {
+                PomodoroScreen(viewModel) {
+                    showSettings = true
+                }
+            }
         }
         // Crear el canal de notificaciones
         createNotificationChannel()
         // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
-
-        }
-
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -30,7 +30,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bpareja.pomodorotec.R
 
 @Composable
-fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
+fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel(),  onSettingsClick: () -> Unit) {
     val timeLeft by viewModel.timeLeft.observeAsState("25:00")
     val isRunning by viewModel.isRunning.observeAsState(false)
     val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS)
@@ -122,6 +122,15 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 ) {
                     Text("Reiniciar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Botón para abrir configuración
+            Button(
+                onClick = onSettingsClick, // Llama a la función pasada como parámetro
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            ) {
+                Text("Configurar Duraciones", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
 
