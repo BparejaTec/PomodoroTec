@@ -104,7 +104,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             }
             Spacer(modifier = Modifier.width(16.dp))
 
-            /*Button(
+            Button(
                 onClick = { viewModel.pauseTimer() },
                 enabled = isRunning,
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
@@ -112,7 +112,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 Text("Pausar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.width(16.dp))
-*/
+
             Button(
                 onClick = { viewModel.resetTimer() },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)

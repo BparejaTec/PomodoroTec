@@ -13,12 +13,18 @@ import androidx.core.content.ContextCompat
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
 import androidx.activity.viewModels
+import androidx.lifecycle.ViewModelProvider
 
+interface NotificationActionListener {
+    fun onPauseTimer()
+    fun onResetTimer()
+}
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), NotificationActionListener {
 
-    private val viewModel: PomodoroViewModel by viewModels()
-
+    private val viewModel: PomodoroViewModel by lazy {
+        PomodoroViewModel.getInstance(application)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,5 +72,13 @@ class MainActivity : ComponentActivity() {
         const val CHANNEL_ID = "pomodoro_channel"
         private const val REQUEST_CODE = 1
         const val NOTIFICATION_ID = 1
+    }
+
+    override fun onPauseTimer() {
+        viewModel.pauseTimer()
+    }
+
+    override fun onResetTimer() {
+        viewModel.resetTimer()
     }
 }

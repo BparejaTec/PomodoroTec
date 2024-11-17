@@ -12,6 +12,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.bpareja.pomodorotec.MainActivity
+import com.bpareja.pomodorotec.NotificationActionListener
+import com.bpareja.pomodorotec.NotificationReceiver
 import com.bpareja.pomodorotec.R
 
 enum class Phase {
@@ -19,6 +21,17 @@ enum class Phase {
 }
 
 class PomodoroViewModel(application: Application) : AndroidViewModel(application) {
+
+    companion object {
+        @Volatile
+        private var INSTANCE: PomodoroViewModel? = null
+
+        fun getInstance(application: Application): PomodoroViewModel {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: PomodoroViewModel(application).also { INSTANCE = it }
+            }
+        }
+    }
 
     private val context = getApplication<Application>().applicationContext
 
@@ -39,7 +52,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _currentPhase.value = Phase.FOCUS
         timeRemainingInMillis = 25 * 60 * 1000L // Ajusta a 2 minutos para pruebas
         _timeLeft.value = "02:00"
-        showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
+        showNotification("Inicio de Concentración", "Enfocate tu meta esta cerca.")
         startTimer()
     }
 
@@ -48,7 +61,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _currentPhase.value = Phase.BREAK
         timeRemainingInMillis = 5 * 60 * 1000L // 5 minutos para descanso
         _timeLeft.value = "05:00"
-        showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
+        showNotification("Inicio de Descanso", "Relajate, tu mente necesita descansar.")
         startTimer()
     }
 
@@ -100,6 +113,22 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
+        // Intent para pausar el temporizador
+        val pauseIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = "PAUSE_ACTION"
+        }
+        val pausePendingIntent: PendingIntent = PendingIntent.getBroadcast(
+            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
+        )
+
+        // Intent para reiniciar el temporizador
+        val resetIntent = Intent(context, NotificationReceiver::class.java).apply {
+            action = "RESET_ACTION"
+        }
+        val resetPendingIntent: PendingIntent = PendingIntent.getBroadcast(
+            context, 2, resetIntent, PendingIntent.FLAG_IMMUTABLE
+        )
+
         val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
             .setSmallIcon(R.drawable.pomodoro)
             .setContentTitle(title)
@@ -107,6 +136,8 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .addAction(0, "Pausar", pausePendingIntent) // Botón Pausar
+            .addAction(0, "Reiniciar", resetPendingIntent) // Botón Reiniciar
 
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
@@ -119,4 +150,5 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             notify(MainActivity.NOTIFICATION_ID, builder.build())
         }
     }
+
 }
