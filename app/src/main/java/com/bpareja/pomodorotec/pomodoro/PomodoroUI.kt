@@ -1,5 +1,8 @@
 package com.bpareja.pomodorotec.pomodoro
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
@@ -36,10 +39,20 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS)
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false)
 
+    val backgroundColor by animateColorAsState(
+        targetValue = if (currentPhase == Phase.FOCUS) Color(0xFFFFF0F0) else Color(0xFFE0FFE0),
+        animationSpec = tween(durationMillis = 1000)
+    )
+
+    val textColor by animateColorAsState(
+        targetValue = if (currentPhase == Phase.FOCUS) Color(0xFFB22222) else Color(0xFF006400),
+        animationSpec = tween(durationMillis = 1000)
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFFF0F0))
+            .background(backgroundColor)
             .padding(16.dp)
     ) {
         // Main content (Pomodoro image, title, time, etc.)
@@ -64,7 +77,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 text = "Método Pomodoro",
                 fontSize = 30.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFB22222),
+                color = textColor,
                 textAlign = TextAlign.Center
             )
 
@@ -73,7 +86,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             Text(
                 text = "Alterna intervalos de 25 minutos de concentración y 5 minutos de descanso para mejorar tu productividad.",
                 fontSize = 16.sp,
-                color = Color(0xFFB22222),
+                color = textColor,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 20.dp)
             )
@@ -81,16 +94,18 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             Spacer(modifier = Modifier.height(32.dp))
 
             // Phase label (focus or break)
-            Text(
-                text = when (currentPhase) {
-                    Phase.FOCUS -> "Tiempo de concentración"
-                    Phase.BREAK -> "Tiempo de descanso"
-                },
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFFB22222),
-                textAlign = TextAlign.Center
-            )
+            Crossfade(targetState = currentPhase) { phase ->
+                Text(
+                    text = when (phase) {
+                        Phase.FOCUS -> "Tiempo de concentración"
+                        Phase.BREAK -> "Tiempo de descanso"
+                    },
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -99,7 +114,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 text = timeLeft,
                 fontSize = 48.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFB22222),
+                color = textColor,
                 textAlign = TextAlign.Center
             )
 
@@ -112,7 +127,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     enabled = !isRunning,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
-                    Text("Iniciar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Iniciar", color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
 
@@ -120,7 +135,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     onClick = { viewModel.resetTimer() },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                 ) {
-                    Text("Reiniciar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Reiniciar", color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -134,7 +149,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     .align(Alignment.BottomCenter) // Position the button at the bottom center
                     .padding(bottom = 70.dp) // Reduce the padding to move the button higher
             ) {
-                Text("Saltar Descanso", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Saltar Descanso", color = textColor, fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
         }
 
