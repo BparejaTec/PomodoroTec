@@ -11,6 +11,9 @@ class NotificationReceiver : BroadcastReceiver() {
         val viewModel = PomodoroViewModel.getInstance(context.applicationContext as Application)
 
         when (intent.action) {
+            "START_ACTION" -> {
+                viewModel.startFocusSession()
+            }
             "PAUSE_ACTION" -> {
                 viewModel.pauseTimer()
             }

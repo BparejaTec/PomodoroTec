@@ -10,7 +10,8 @@ android {
     defaultConfig {
         applicationId = "com.bpareja.pomodorotec"
         minSdk = 33
-        targetSdk = 34
+        //noinspection OldTargetApi
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -70,19 +71,29 @@ dependencies {
 
     // Jetpack Compose*
 
-    implementation ("androidx.compose.ui:ui:1.4.3")
+    implementation ("androidx.compose.ui:ui:1.7.5")
 
-    implementation ("androidx.compose.material3:material3:1.0.1")
+    implementation ("androidx.compose.material3:material3:1.3.1")
 
-    implementation ("androidx.activity:activity-compose:1.7.1")
+    implementation ("androidx.activity:activity-compose:1.9.3")
 
     // WorkManager para tareas en segundo plano*
 
-    implementation ("androidx.work:work-runtime-ktx:2.8.1")
+    implementation ("androidx.work:work-runtime-ktx:2.10.0")
 
     // Core KTX*
 
-    implementation ("androidx.core:core-ktx:1.10.1")
+    implementation ("androidx.core:core-ktx:1.15.0")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
+    // Jetpack Glance
+    implementation("androidx.glance:glance:1.1.1")
+    // For AppWidgets support
+    implementation ("androidx.glance:glance-appwidget:1.1.1")
+
+    // For interop APIs with Material 3
+    implementation ("androidx.glance:glance-material3:1.1.1")
+
+    // For interop APIs with Material 2
+    implementation ("androidx.glance:glance-material:1.1.1")
 }

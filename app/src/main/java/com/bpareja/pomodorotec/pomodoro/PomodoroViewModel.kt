@@ -2,7 +2,9 @@ package com.bpareja.pomodorotec.pomodoro
 
 import android.app.Application
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.CountDownTimer
 import androidx.core.app.ActivityCompat
@@ -12,7 +14,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.bpareja.pomodorotec.MainActivity
-import com.bpareja.pomodorotec.NotificationActionListener
 import com.bpareja.pomodorotec.NotificationReceiver
 import com.bpareja.pomodorotec.R
 
@@ -34,6 +35,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     }
 
     private val context = getApplication<Application>().applicationContext
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences("PomodoroPrefs", Context.MODE_PRIVATE)
 
     private val _timeLeft = MutableLiveData("25:00")
     val timeLeft: LiveData<String> = _timeLeft
@@ -47,12 +49,22 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     private var countDownTimer: CountDownTimer? = null
     private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
 
+    // Guardar el estado en SharedPreferences para el widget
+    private fun saveStateToPreferences() {
+        val editor = sharedPreferences.edit()
+        editor.putString("timeLeft", _timeLeft.value)
+        editor.putBoolean("isRunning", _isRunning.value == true)
+        editor.putString("currentPhase", _currentPhase.value?.name)
+        editor.apply()
+    }
+
     // Función para iniciar la sesión de concentración
     fun startFocusSession() {
         _currentPhase.value = Phase.FOCUS
         timeRemainingInMillis = 25 * 60 * 1000L // Ajusta a 2 minutos para pruebas
         _timeLeft.value = "02:00"
         showNotification("Inicio de Concentración", "Enfocate tu meta esta cerca.")
+        saveStateToPreferences()
         startTimer()
     }
 
@@ -62,6 +74,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         timeRemainingInMillis = 5 * 60 * 1000L // 5 minutos para descanso
         _timeLeft.value = "05:00"
         showNotification("Inicio de Descanso", "Relajate, tu mente necesita descansar.")
+        saveStateToPreferences()
         startTimer()
     }
 
@@ -76,6 +89,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 val minutes = (millisUntilFinished / 1000) / 60
                 val seconds = (millisUntilFinished / 1000) % 60
                 _timeLeft.value = String.format("%02d:%02d", minutes, seconds)
+                saveStateToPreferences() // Guardar el estado en preferencias
             }
 
             override fun onFinish() {
