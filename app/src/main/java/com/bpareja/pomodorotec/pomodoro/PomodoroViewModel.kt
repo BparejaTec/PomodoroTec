@@ -31,6 +31,11 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         fun skipBreak() {
             instance?.startFocusSession()  // Saltar el descanso y comenzar sesión de concentración
         }
+
+        // ID para la notificación de agua
+        private const val WATER_NOTIFICATION_ID = 2
+        // Número de sesiones antes de mostrar la notificación de agua
+        private const val SESSIONS_BEFORE_WATER_REMINDER = 2
     }
 
     private val context = getApplication<Application>().applicationContext
@@ -49,6 +54,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
 
     private val _progress = MutableLiveData(0f) // Progreso (0-1)
     val progress: LiveData<Float> = _progress
+
+    // Contador para sesiones completadas
+    private var completedSessions = 0
 
     // Variables de control del timer
     private var countDownTimer: CountDownTimer? = null
@@ -79,6 +87,14 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = true // Mostrar el botón durante el descanso
         showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
+
+        // Incrementar contador de sesiones y verificar si mostrar recordatorio de agua
+        completedSessions++
+        if (completedSessions >= SESSIONS_BEFORE_WATER_REMINDER) {
+            showWaterReminderNotification()
+            completedSessions = 0 // Reiniciar contador
+        }
+
         startTimer()
     }
 
@@ -157,7 +173,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                     "🎯 Estás en modo concentración"
             Phase.BREAK -> "⏰ Tiempo restante: $formattedTime\n" +
                     "🌟 ¡Buen trabajo! Toma un respiro\n" +
-                    "🧘‍♂️ Aprovecha para estirarte"
+                    "🧘‍♂ Aprovecha para estirarte"
             else -> message
         }
 
@@ -212,6 +228,47 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 notify(MainActivity.NOTIFICATION_ID, builder.build())
+            }
+        }
+    }
+
+    // Nueva función para mostrar la notificación de recordatorio de agua
+    private fun showWaterReminderNotification() {
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, 0, intent, PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val style = NotificationCompat.BigTextStyle()
+            .setBigContentTitle("💧 ¡Hora de Hidratarte!")
+            .bigText("Has completado varias sesiones de trabajo. " +
+                    "Recuerda mantenerte hidratado para un mejor rendimiento.\n" +
+                    "🚰 Toma un vaso de agua fresca")
+            .setSummaryText("Recordatorio de Salud")
+
+        val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle("💧 ¡Hora de Hidratarte!")
+            .setContentText("Toma un momento para beber agua")
+            .setStyle(style)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setColor(Color.rgb(33, 150, 243)) // Color azul para agua
+            .setColorized(true)
+            .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
+            .setVibrate(longArrayOf(0, 250, 250, 250))
+            .setLights(Color.BLUE, 1000, 1000)
+
+        with(NotificationManagerCompat.from(context)) {
+            if (ActivityCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                notify(WATER_NOTIFICATION_ID, builder.build())
             }
         }
     }
