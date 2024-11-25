@@ -142,13 +142,14 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                // Timer grande
-                Text(
-                    text = timeLeft,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
+
+                // Nueva animación de cuenta regresiva
+                CountdownAnimation(
+                    timeLeft = timeLeft,
+                    progress = progress,
+                    isRunning = isRunning,
+                    phase = currentPhase,
+                    modifier = Modifier.padding(vertical = 4.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
