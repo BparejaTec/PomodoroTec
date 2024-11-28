@@ -8,30 +8,48 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
-import androidx.activity.viewModels
-
+import com.bpareja.pomodorotec.ui.history.SessionHistoryScreen
 
 class MainActivity : ComponentActivity() {
-
     private val viewModel: PomodoroViewModel by viewModels()
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            PomodoroScreen(viewModel)
+            val navController = rememberNavController()
+            NavHost(
+                navController = navController,
+                startDestination = "timer"
+            ) {
+                composable("timer") {
+                    PomodoroScreen(
+                        viewModel = viewModel,
+                        onNavigateToHistory = {
+                            navController.navigate("history")
+                        }
+                    )
+                }
+                composable("history") {
+                    SessionHistoryScreen(
+                        viewModel = viewModel,
+                        onNavigateToTimer = {
+                            navController.popBackStack()
+                        }
+                    )
+                }
+            }
         }
-        // Crear el canal de notificaciones
         createNotificationChannel()
-        // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
-
-        }
-
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

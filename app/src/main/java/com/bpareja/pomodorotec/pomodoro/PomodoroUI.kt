@@ -1,40 +1,16 @@
 package com.bpareja.pomodorotec.pomodoro
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.Alignment
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
@@ -52,16 +28,19 @@ import com.bpareja.pomodorotec.R
 import com.bpareja.pomodorotec.ui.theme.PomodoroTecTheme
 
 @Composable
-fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
+fun PomodoroScreen(
+    viewModel: PomodoroViewModel = viewModel(),
+    onNavigateToHistory: () -> Unit
+) {
     // Estados observables que controlan la UI
-    val timeLeft by viewModel.timeLeft.observeAsState("25:00")        // Tiempo restante mostrado
-    val isRunning by viewModel.isRunning.observeAsState(false)        // Estado del timer (corriendo/pausado)
-    val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS) // Fase actual (FOCUS/BREAK)
-    val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
-    var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
-    val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
+    val timeLeft by viewModel.timeLeft.observeAsState("25:00") // Tiempo restante
+    val isRunning by viewModel.isRunning.observeAsState(false) // Estado del temporizador
+    val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS) // Fase actual
+    val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón de saltar
+    var isDarkTheme by remember { mutableStateOf(false) } // Tema oscuro
+    val progress by viewModel.progress.observeAsState(0f) // Progreso del temporizador
 
-    // Contenedor principal con tema
+    // Tema principal de la pantalla
     PomodoroTecTheme(darkTheme = isDarkTheme) {
         Box(
             modifier = Modifier
@@ -69,6 +48,20 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 .background(MaterialTheme.colorScheme.background)
                 .padding(16.dp)
         ) {
+            // Botón de historial en la esquina superior izquierda
+            IconButton(
+                onClick = onNavigateToHistory,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Home,
+                    contentDescription = "Historial de sesiones",
+                    tint = MaterialTheme.colorScheme.onBackground
+                )
+            }
+
             // Switch de tema oscuro en la esquina superior derecha
             Row(
                 modifier = Modifier
@@ -93,6 +86,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     )
                 )
             }
+
             // Contenido principal centrado
             Column(
                 modifier = Modifier
@@ -101,7 +95,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Pomodoro image
+                // Imagen de Pomodoro
                 Image(
                     painter = painterResource(id = R.drawable.pomodoro),
                     contentDescription = "Imagen de Pomodoro",
@@ -110,7 +104,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                         .padding(bottom = 16.dp)
                 )
 
-                // Title y resto del contenido con colores del tema
+                // Título
                 Text(
                     text = "Método Pomodoro",
                     fontSize = 30.sp,
@@ -120,6 +114,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
+
+                // Descripción
                 Text(
                     text = "Alterna intervalos de 25 minutos de concentración y 5 minutos de descanso para mejorar tu productividad.",
                     fontSize = 16.sp,
@@ -129,6 +125,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(32.dp))
+
                 // Indicador de fase actual
                 Text(
                     text = when (currentPhase) {
@@ -142,7 +139,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                // Timer grande
+
+                // Tiempo restante
                 Text(
                     text = timeLeft,
                     fontSize = 48.sp,
@@ -153,27 +151,17 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Contenedor con padding y sombra para la barra de progreso
-                Box(
+                // Barra de progreso
+                CustomProgressBar(
+                    progress = progress,
                     modifier = Modifier
                         .padding(horizontal = 24.dp)
-                        .shadow(
-                            elevation = 4.dp,
-                            shape = RoundedCornerShape(12.dp)
-                        )
-                ) {
-                    // Barra de progreso personalizada
-                    CustomProgressBar(
-                        progress = progress,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(4.dp)
-                    )
-                }
+                        .shadow(elevation = 4.dp, shape = RoundedCornerShape(12.dp))
+                        .fillMaxWidth()
+                )
 
-                // Porcentaje debajo de la barra
+                // Porcentaje de progreso
                 Text(
-                    // Porcentaje de progreso
                     text = "${(progress * 100).toInt()}%",
                     color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 14.sp,
@@ -182,7 +170,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Botones con colores del tema
+                // Botones principales
                 Row(
                     horizontalArrangement = Arrangement.Center,
                     modifier = Modifier.fillMaxWidth()
@@ -192,9 +180,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                         enabled = !isRunning,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            contentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     ) {
                         Text("Iniciar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
@@ -213,7 +199,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     }
                 }
             }
-            // Botón para saltar el descanso (visible solo en fase BREAK)
+
+            // Botón para saltar descanso
             if (isSkipBreakButtonVisible) {
                 Button(
                     onClick = { PomodoroViewModel.skipBreak() },
@@ -232,48 +219,38 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     }
 }
 
-// Barra de progreso personalizada con efecto de brillo
+// Barra de progreso personalizada
 @Composable
-fun CustomProgressBar(
-    progress: Float,
-    modifier: Modifier = Modifier
-) {
-    // Contenedor exterior con fondo
+fun CustomProgressBar(progress: Float, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .height(24.dp) // Altura aumentada
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp)) // Bordes redondeados
+            .height(24.dp)
+            .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        // Barra de progreso interior con efecto shimmer
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(progress)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.primary)
-                .shimmerEffect() // Efecto de brillo
+                .shimmerEffect()
         )
     }
 }
-// Efecto de brillo animado para la barra de progreso
+
+// Efecto de brillo
 @Composable
 fun Modifier.shimmerEffect(): Modifier = composed {
-    // Animación infinita para el efecto de brillo
     val transition = rememberInfiniteTransition()
     val translateAnim = transition.animateFloat(
         initialValue = 0f,
         targetValue = 1000f,
         animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = 1200,
-                easing = FastOutSlowInEasing
-            ),
-            repeatMode = RepeatMode.Restart
-        ), label = ""
+            tween(durationMillis = 1200, easing = FastOutSlowInEasing),
+            RepeatMode.Restart
+        )
     )
-    // Aplica el gradiente animado
     background(
         brush = Brush.linearGradient(
             colors = listOf(
