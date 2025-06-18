@@ -228,6 +228,17 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     Text("Saltar Descanso", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
+
+            Button(
+                onClick = {
+                    val sessionDuration = 25 // Puedes reemplazarlo con la duración configurada por el usuario
+                    val breakDuration = 5    // Puedes reemplazarlo con la duración configurada por el usuario
+                    viewModel.updateDurations(sessionDuration, breakDuration)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+            ) {
+                Text("Actualizar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
         }
     }
 }

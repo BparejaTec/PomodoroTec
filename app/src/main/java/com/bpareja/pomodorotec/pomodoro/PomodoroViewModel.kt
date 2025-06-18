@@ -16,6 +16,7 @@ import androidx.lifecycle.MutableLiveData
 import com.bpareja.pomodorotec.MainActivity
 import com.bpareja.pomodorotec.PomodoroReceiver
 import com.bpareja.pomodorotec.R
+import com.bpareja.pomodorotec.utils.DataSyncManager
 
 enum class Phase {
     FOCUS, BREAK
@@ -109,6 +110,23 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 }
             }
         }.start()
+    }
+
+    fun updateDurations(sessionDuration: Int, breakDuration: Int) {
+        // Envía los datos al dispositivo Wear OS
+        DataSyncManager.sendPomodoroData(
+            context = getApplication(),
+            sessionDuration = sessionDuration,
+            breakDuration = breakDuration
+        )
+    }
+
+    fun updateTimerData() {
+        DataSyncManager.sendPomodoroData(
+            context = getApplication(),
+            sessionDuration = 25,  // Enviar duración personalizada si la tienes
+            breakDuration = 5      // Enviar duración personalizada si la tienes
+        )
     }
 
     // Pausa el temporizador
