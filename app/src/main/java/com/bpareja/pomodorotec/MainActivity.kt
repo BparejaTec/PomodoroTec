@@ -10,9 +10,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
 import androidx.activity.viewModels
+import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
 
 
 class MainActivity : ComponentActivity() {

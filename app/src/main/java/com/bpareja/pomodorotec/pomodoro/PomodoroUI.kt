@@ -1,6 +1,7 @@
 package com.bpareja.pomodorotec.pomodoro
 
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -50,6 +51,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.bpareja.pomodorotec.R
 import com.bpareja.pomodorotec.ui.theme.PomodoroTecTheme
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.Path
+import kotlin.math.sin
 
 @Composable
 fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
@@ -181,7 +185,12 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-
+                AnimatedWave(
+                    color = if (currentPhase == Phase.FOCUS) Color(0xFFB22222) else Color(0xFF2E8B57),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp) // altura ajustable
+                )
                 // Botones con colores del tema
                 Row(
                     horizontalArrangement = Arrangement.Center,
@@ -297,3 +306,47 @@ fun Modifier.shimmerEffect(): Modifier = composed {
         )
     )
 }
+
+@Composable
+fun AnimatedWave(
+    color: Color,
+    modifier: Modifier = Modifier,
+    amplitude: Float = 20f,
+    waveLength: Float = 200f,
+    animationDurationMillis: Int = 2000
+) {
+    // Animación que mueve la onda
+    val infiniteTransition = rememberInfiniteTransition()
+    val animatedOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 2 * Math.PI.toFloat(),
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = animationDurationMillis,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        )
+    )
+
+    Canvas(
+        modifier = modifier
+    ) {
+        val width = size.width
+        val height = size.height
+        val path = Path().apply {
+            moveTo(0f, height / 2)
+            for (x in 0..width.toInt()) {
+                val y = height / 2 + amplitude * sin(
+                    2 * Math.PI * (x / waveLength) + animatedOffset
+                ).toFloat()
+                lineTo(x.toFloat(), y)
+            }
+            lineTo(width, height)
+            lineTo(0f, height)
+            close()
+        }
+        drawPath(path = path, color = color.copy(alpha = 0.6f))
+    }
+}
+

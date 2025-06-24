@@ -86,4 +86,8 @@ dependencies {
     implementation ("androidx.core:core-ktx:1.10.1")
 
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
+
+    //Widgets
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
 }
