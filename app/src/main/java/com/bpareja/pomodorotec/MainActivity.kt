@@ -1,9 +1,11 @@
 package com.bpareja.pomodorotec
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -32,17 +34,24 @@ class MainActivity : ComponentActivity() {
         createNotificationChannel()
         // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
-
-        }
+        
+        // Programar recordatorio de inactividad
+        scheduleInactivityReminder()
+    }
 
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Canal Pomodoro"
-            val descriptionText = "Notificaciones para el temporizador Pomodoro"
+            val name = "🎯 Temporizador Pomodoro"
+            val descriptionText = "Notificaciones elegantes y motivacionales para tus sesiones de concentración y descanso"
             val importance = NotificationManager.IMPORTANCE_HIGH
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
+                enableLights(true)  // Habilitar luz LED
+                lightColor = Color.rgb(255, 107, 107)  // Color coral por defecto
+                enableVibration(true)  // Habilitar vibración
+                setShowBadge(true)  // Mostrar badge en el ícono de la app
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC  // Visible en pantalla bloqueada
             }
             val notificationManager: NotificationManager =
                 getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -65,8 +74,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun scheduleInactivityReminder() {
+        val workRequest = androidx.work.PeriodicWorkRequestBuilder<com.bpareja.pomodorotec.workers.ReminderWorker>(
+            12, java.util.concurrent.TimeUnit.HOURS
+        ).build()
+
+        androidx.work.WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "InactivityReminder",
+            androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
+    }
+
     companion object {
-        const val CHANNEL_ID = "pomodoro_channel"
+        const val CHANNEL_ID = "pomodoro_channel_v2"
         private const val REQUEST_CODE = 1
         const val NOTIFICATION_ID = 1
     }

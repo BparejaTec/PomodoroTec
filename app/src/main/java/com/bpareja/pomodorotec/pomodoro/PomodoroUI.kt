@@ -55,6 +55,14 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import kotlin.math.sin
 
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import com.bpareja.pomodorotec.stats.StatsActivity
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+
 @Composable
 fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     // Estados observables que controlan la UI
@@ -64,6 +72,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
+    val context = LocalContext.current
 
     // Contenedor principal con tema
     PomodoroTecTheme(darkTheme = isDarkTheme) {
@@ -77,7 +86,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp),
+                    .padding(top = 40.dp, end = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
@@ -88,7 +97,10 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
                 Switch(
                     checked = isDarkTheme,
-                    onCheckedChange = { isDarkTheme = it },
+                    onCheckedChange = { 
+                        isDarkTheme = it
+                        viewModel.setDarkMode(it)
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
@@ -97,6 +109,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     )
                 )
             }
+
+
             // Contenido principal centrado
             Column(
                 modifier = Modifier
@@ -221,6 +235,34 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                         Text("Reiniciar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Botón de Reporte Semanal (más visible)
+                Button(
+                    onClick = {
+                        val intent = Intent(context, StatsActivity::class.java)
+                        intent.putExtra("IS_DARK_THEME", isDarkTheme)
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary
+                    ),
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = "Ver Reporte Semanal",
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Ver Reporte Semanal",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             // Botón para saltar el descanso (visible solo en fase BREAK)
             if (isSkipBreakButtonVisible) {
@@ -244,6 +286,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     val breakDuration = 5    // Puedes reemplazarlo con la duración configurada por el usuario
                     viewModel.updateDurations(sessionDuration, breakDuration)
                 },
+                modifier = Modifier.padding(top = 32.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
             ) {
                 Text("Actualizar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)

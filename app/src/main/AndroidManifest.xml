@@ -38,6 +38,12 @@
             </intent-filter>
         </activity>
 
+        <!-- Actividad de Estadísticas -->
+        <activity
+            android:name=".stats.StatsActivity"
+            android:exported="false"
+            android:screenOrientation="portrait" />
+
         <!-- Servicio para Wear OS (opcional, quítalo si no usas Wear OS) -->
         <service
             android:name=".ActionReceiverService"
