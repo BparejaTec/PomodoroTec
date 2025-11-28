@@ -41,12 +41,12 @@
 
     <Button
         android:id="@+id/widget_open_app"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/btn_rounded"
         android:text="Abrir Pomodoro"
         android:textAllCaps="false"
-        android:background="@drawable/btn_rounded"
-        android:textColor="@color/white"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:textColor="@color/white" />
 </LinearLayout>
 
 

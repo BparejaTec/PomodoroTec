@@ -20,11 +20,21 @@ import com.bpareja.pomodorotec.PomodoroReceiver
 import com.bpareja.pomodorotec.R
 import com.bpareja.pomodorotec.utils.DataSyncManager
 import android.appwidget.AppWidgetManager
-import android.content.ComponentName
 
+import android.content.ComponentName
+import android.widget.RemoteViews
+import android.app.NotificationManager
+import android.provider.Settings
+
+
+import android.content.SharedPreferences
+import androidx.core.content.edit
 enum class Phase {
     FOCUS, BREAK
 }
+//Definicion del nombre del archivo de configuracion
+private const val PREFS = "preferencias"
+private const val KEY_PREV_FILTER = "sin_no_molestar"
 
 class PomodoroViewModel(application: Application) : AndroidViewModel(application) {
     init {
@@ -56,6 +66,13 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     private val _progress = MutableLiveData(0f) // Progreso (0-1)
     val progress: LiveData<Float> = _progress
 
+    private val _autoDnd = MutableLiveData(false)
+    val autoDnd: LiveData<Boolean> = _autoDnd
+
+    fun setAutoDnd(value: Boolean) {
+        _autoDnd.value = value
+    }
+
     // Variables de control del timer
     private var countDownTimer: CountDownTimer? = null
 
@@ -65,6 +82,11 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     // ----------- FUNCIONES PRINCIPALES ------------
 
     fun startFocusSession() {
+        // Si el usuario activó la opción de NO MOLESTAR, aplicar el modo DND
+        if (autoDnd.value == true) {
+            ActivarDnd(context)
+        }
+
         countDownTimer?.cancel()
         _currentPhase.value = Phase.FOCUS
         timeRemainingInMillis = 25 * 60 * 1000L
@@ -74,6 +96,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _isSkipBreakButtonVisible.value = false
         showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
         startTimer()
+
     }
 
     private fun startBreakSession() {
@@ -138,6 +161,11 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun resetTimer() {
+        // Si estaba activo el AUTO DND, restauramos el modo anterior
+        if (autoDnd.value == true) {
+            DesactivarDnd(context)
+        }
+
         countDownTimer?.cancel()
         _isRunning.value = false
         _currentPhase.value = Phase.FOCUS
@@ -226,6 +254,8 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
+
+
         val progress = ((timeRemainingInMillis * 100) / totalTimeInMillis).toInt()
 
         val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
@@ -233,7 +263,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 if (_currentPhase.value == Phase.FOCUS) R.drawable.baseline_center_focus_strong_24
                 else R.drawable.baseline_free_breakfast_24
             )
-            .setContentTitle(customTitle)
+            .setContentTitle(customTitle.uppercase())
             .setContentText(customMessage)
             .setStyle(style)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -273,5 +303,69 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 notify(MainActivity.NOTIFICATION_ID, builder.build())
             }
         }
+
+    }
+
+    // ---------------- PREFERENCIAS - MODO NO MOLESTAR ACTIVAR / DESACTIVAR --------------------------
+
+
+    fun PedirPermisoDND(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (!nm.isNotificationPolicyAccessGranted) {
+            // Abre la pantalla donde el usuario puede dar permiso
+            val intento = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+            intento.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intento)
+        }
+    }
+
+
+
+    fun ActivarDnd(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        // Verifica permiso
+        if (!nm.isNotificationPolicyAccessGranted) {
+            // Si no hay permiso, no intentes forzar
+            PedirPermisoDND(context)
+            return
+        }
+
+        // Guarda filtro actual para restaurar luego
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val currentFilter = nm.currentInterruptionFilter
+        prefs.edit { putInt(KEY_PREV_FILTER, currentFilter) }
+
+        // Activa el modo no molestar directamente desde nuestra app :
+        try {
+            nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+        } catch (se: SecurityException) {
+            // No se pudo cambiar: permiso revocado por el usuario
+            se.printStackTrace()
+        }
+    }
+
+    fun DesactivarDnd(context: Context) {
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val prev = prefs.getInt(KEY_PREV_FILTER, NotificationManager.INTERRUPTION_FILTER_ALL)
+
+        if (!nm.isNotificationPolicyAccessGranted) {
+            // Si ya no hay permiso, no intentes cambiar nada
+            return
+        }
+
+        try {
+            nm.setInterruptionFilter(prev)
+        } catch (se: SecurityException) {
+            se.printStackTrace()
+            // Intentar restaurar a ALL por seguridad
+            try {
+                nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_ALL)
+            } catch (_: Exception) {}
+        }
+
+        // limpia el pref
+        prefs.edit { remove(KEY_PREV_FILTER) }
     }
 }
