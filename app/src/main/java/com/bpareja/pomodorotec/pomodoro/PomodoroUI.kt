@@ -1,5 +1,8 @@
 package com.bpareja.pomodorotec.pomodoro
 
+import android.annotation.SuppressLint
+import android.app.NotificationManager
+import android.content.Context
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -53,8 +56,10 @@ import com.bpareja.pomodorotec.R
 import com.bpareja.pomodorotec.ui.theme.PomodoroTecTheme
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.platform.LocalContext
 import kotlin.math.sin
 
+@SuppressLint("ServiceCast")
 @Composable
 fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     // Estados observables que controlan la UI
@@ -89,6 +94,53 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 Switch(
                     checked = isDarkTheme,
                     onCheckedChange = { isDarkTheme = it },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onBackground,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 55.dp, end = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Activar No Molestar",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontSize = 14.sp
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Observar LiveData del ViewModel que indica si AUTO DND está activado
+                val autoDndState by viewModel.autoDnd.observeAsState(false)
+                val ctx = LocalContext.current
+
+                Switch(
+                    checked = autoDndState,
+                    onCheckedChange = { enabled ->
+                        // Guardar nuevo estado en el ViewModel
+                        viewModel.setAutoDnd(enabled)
+
+                        if (enabled) {
+                            // Verificar si tenemos permiso para modificar DND
+                            val nm = ctx.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            if (!nm.isNotificationPolicyAccessGranted) {
+                                // Si no hay permisos => enviar a ajustes
+                                viewModel.PedirPermisoDND(ctx)
+                            } else {
+                                // Si hay permisos => activar DND inmediatamente
+                                viewModel.ActivarDnd(ctx)
+                            }
+                        } else {
+                            // Si el usuario lo apaga => restaurar comportamiento normal
+                            viewModel.DesactivarDnd(ctx)
+                        }
+                    },
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
