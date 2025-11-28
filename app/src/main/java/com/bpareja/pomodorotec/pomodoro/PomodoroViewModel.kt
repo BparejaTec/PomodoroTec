@@ -21,6 +21,8 @@ import com.bpareja.pomodorotec.R
 import com.bpareja.pomodorotec.utils.DataSyncManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import android.net.Uri
+
 
 enum class Phase {
     FOCUS, BREAK
@@ -173,6 +175,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     // ----------------- NOTIFICACIÓN AVANZADA ------------------------
 
     private fun showNotification(title: String, message: String) {
+
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         }
@@ -185,46 +188,45 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             Phase.BREAK -> "☕ ¡Momento de Descanso!"
             else -> title
         }
-        val formattedTime = _timeLeft.value?.let { if (it != "00:00") it else "Finalizado" } ?: "25:00"
+
+        val formattedTime = _timeLeft.value?.let {
+            if (it != "00:00") it else "Finalizado"
+        } ?: "25:00"
+
         val customMessage = when (_currentPhase.value) {
             Phase.FOCUS -> "⏰ Restan $formattedTime\n💪 ¡Mantén el enfoque!"
             Phase.BREAK -> "⏰ Restan $formattedTime\n🧘‍♂️ ¡Relájate unos minutos!"
             else -> message
         }
-        val bigImage = BitmapFactory.decodeResource(
-            context.resources,
-            if (_currentPhase.value == Phase.FOCUS) R.drawable.focus_image
-            else R.drawable.break_image
-        )
-        val style = NotificationCompat.BigPictureStyle().bigPicture(bigImage)
 
-        val notificationColor = if (_currentPhase.value == Phase.FOCUS) Color.rgb(178, 34, 34) else Color.rgb(46, 139, 87)
+        val notificationColor = if (_currentPhase.value == Phase.FOCUS)
+            Color.rgb(178, 34, 34)
+        else
+            Color.rgb(46, 139, 87)
 
         val vibrationPattern = if (_currentPhase.value == Phase.FOCUS)
-            longArrayOf(0, 100, 100, 100)
+            longArrayOf(0, 150, 150, 150)
         else
-            longArrayOf(0, 500, 500)
+            longArrayOf(0, 500, 500, 500)
 
-        // Intents para acciones
+        // ----------------------------------------------------
+        // 🔊 **SONIDO PERSONALIZADO**
+        // ----------------------------------------------------
+        val soundUri = Uri.parse("android.resource://${context.packageName}/${R.raw.pomodoro_alarm}")
+        // ----------------------------------------------------
+
+        // Intents de acciones
         val pauseIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "PAUSE_TIMER" }
-        val pausePendingIntent = PendingIntent.getBroadcast(
-            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
-        )
+        val pausePendingIntent = PendingIntent.getBroadcast(context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val resumeIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "RESUME_TIMER" }
-        val resumePendingIntent = PendingIntent.getBroadcast(
-            context, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE
-        )
+        val resumePendingIntent = PendingIntent.getBroadcast(context, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val skipIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "SKIP_BREAK" }
-        val skipPendingIntent = PendingIntent.getBroadcast(
-            context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE
-        )
+        val skipPendingIntent = PendingIntent.getBroadcast(context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val endIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "END_TIMER" }
-        val endPendingIntent = PendingIntent.getBroadcast(
-            context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE
-        )
+        val endPendingIntent = PendingIntent.getBroadcast(context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE)
 
         val progress = ((timeRemainingInMillis * 100) / totalTimeInMillis).toInt()
 
@@ -235,33 +237,17 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             )
             .setContentTitle(customTitle)
             .setContentText(customMessage)
-            .setStyle(style)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setColor(notificationColor)
-            .setColorized(true)
-            .setLights(notificationColor, 1000, 1000)
             .setVibrate(vibrationPattern)
-            .setProgress(100, progress, false)
-            .setSound(
-                RingtoneManager.getDefaultUri(
-                    if (_currentPhase.value == Phase.FOCUS) RingtoneManager.TYPE_RINGTONE
-                    else RingtoneManager.TYPE_NOTIFICATION
-                )
-            )
-            // Botones
+            .setSound(soundUri) // 🎉 ESTA ES LA LÍNEA QUE USA TU SONIDO PERSONALIZADO
             .addAction(R.drawable.baseline_pause_circle_24, "Pausar", pausePendingIntent)
-            .addAction(R.drawable.ic_resume, "Reanudar", resumePendingIntent)
             .addAction(R.drawable.ic_stop, "Terminar", endPendingIntent)
 
         if (_currentPhase.value == Phase.BREAK) {
-            builder.addAction(
-                R.drawable.ic_skip,
-                "Saltar Descanso",
-                skipPendingIntent
-            )
+            builder.addAction(R.drawable.ic_skip, "Saltar Descanso", skipPendingIntent)
         }
 
         with(NotificationManagerCompat.from(context)) {
@@ -275,3 +261,4 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         }
     }
 }
+

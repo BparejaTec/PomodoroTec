@@ -13,6 +13,9 @@ import androidx.core.content.ContextCompat
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
 import androidx.activity.viewModels
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
+import android.net.Uri
+import android.media.AudioAttributes
+
 
 
 class MainActivity : ComponentActivity() {
@@ -38,17 +41,33 @@ class MainActivity : ComponentActivity() {
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Canal Pomodoro"
-            val descriptionText = "Notificaciones para el temporizador Pomodoro"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
-                description = descriptionText
+
+            val soundUri = android.net.Uri.parse("android.resource://${packageName}/${R.raw.pomodoro_alarm}")
+
+            val attributes = android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Canal Pomodoro",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Notificaciones del temporizador Pomodoro"
+                enableLights(true)
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 500, 300, 700)
+                setSound(soundUri, attributes)
             }
-            val notificationManager: NotificationManager =
-                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(channel)
         }
     }
+
+
+
 
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
