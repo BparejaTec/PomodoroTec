@@ -173,6 +173,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     // ----------------- NOTIFICACIÓN AVANZADA ------------------------
 
     private fun showNotification(title: String, message: String) {
+
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         }
@@ -180,98 +181,96 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             context, 0, intent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val customTitle = when (_currentPhase.value) {
-            Phase.FOCUS -> "🎯 ¡Tiempo de Concentración!"
-            Phase.BREAK -> "☕ ¡Momento de Descanso!"
-            else -> title
-        }
-        val formattedTime = _timeLeft.value?.let { if (it != "00:00") it else "Finalizado" } ?: "25:00"
-        val customMessage = when (_currentPhase.value) {
-            Phase.FOCUS -> "⏰ Restan $formattedTime\n💪 ¡Mantén el enfoque!"
-            Phase.BREAK -> "⏰ Restan $formattedTime\n🧘‍♂️ ¡Relájate unos minutos!"
-            else -> message
-        }
+        // --- NUEVA CABECERA MODERNA ---
+        val phaseIsFocus = _currentPhase.value == Phase.FOCUS
+
+        val customTitle = if (phaseIsFocus)
+            "🎯 Sesión de Concentración"
+        else
+            "☕ Descanso Activo"
+
+        val formattedTime = _timeLeft.value ?: "00:00"
+
+        val customMessage = if (phaseIsFocus)
+            "⏰ Tiempo restante: $formattedTime\n💪 Sigue avanzando, estás haciendo un gran trabajo."
+        else
+            "⏰ Tiempo restante: $formattedTime\n🧘 Respira y relájate, te lo ganaste."
+
+        // --- NUEVAS IMÁGENES ---
         val bigImage = BitmapFactory.decodeResource(
             context.resources,
-            if (_currentPhase.value == Phase.FOCUS) R.drawable.focus_image
-            else R.drawable.break_image
+            if (phaseIsFocus) R.drawable.focus_image else R.drawable.break_image
         )
-        val style = NotificationCompat.BigPictureStyle().bigPicture(bigImage)
 
-        val notificationColor = if (_currentPhase.value == Phase.FOCUS) Color.rgb(178, 34, 34) else Color.rgb(46, 139, 87)
+        val bigStyle = NotificationCompat.BigPictureStyle()
+            .bigPicture(bigImage)
+            .setSummaryText(customMessage)
 
-        val vibrationPattern = if (_currentPhase.value == Phase.FOCUS)
-            longArrayOf(0, 100, 100, 100)
+        // --- NUEVO ESTILO CON TÍTULO Y TEXTO GRANDE ---
+        val bigTextStyle = NotificationCompat.BigTextStyle()
+            .bigText(customMessage)
+            .setBigContentTitle(customTitle)
+            .setSummaryText("PomodoroTec")
+
+        // --- COLOR MEJORADO ---
+        val notificationColor = if (phaseIsFocus)
+            Color.parseColor("#C62828")   // Rojo moderno
         else
-            longArrayOf(0, 500, 500)
+            Color.parseColor("#2E7D32")   // Verde moderno
 
-        // Intents para acciones
+        // --- VIBRACIÓN MÁS PROFESIONAL ---
+        val vibrationPattern = if (phaseIsFocus)
+            longArrayOf(0, 80, 80, 80)
+        else
+            longArrayOf(0, 400, 200, 400)
+
+        // --- INTENT DE ACCIONES ---
         val pauseIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "PAUSE_TIMER" }
-        val pausePendingIntent = PendingIntent.getBroadcast(
-            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
         val resumeIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "RESUME_TIMER" }
-        val resumePendingIntent = PendingIntent.getBroadcast(
-            context, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
         val skipIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "SKIP_BREAK" }
-        val skipPendingIntent = PendingIntent.getBroadcast(
-            context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
         val endIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "END_TIMER" }
-        val endPendingIntent = PendingIntent.getBroadcast(
-            context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val progress = ((timeRemainingInMillis * 100) / totalTimeInMillis).toInt()
 
         val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
             .setSmallIcon(
-                if (_currentPhase.value == Phase.FOCUS) R.drawable.baseline_center_focus_strong_24
+                if (phaseIsFocus) R.drawable.baseline_center_focus_strong_24
                 else R.drawable.baseline_free_breakfast_24
             )
             .setContentTitle(customTitle)
             .setContentText(customMessage)
-            .setStyle(style)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
             .setColor(notificationColor)
             .setColorized(true)
-            .setLights(notificationColor, 1000, 1000)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
             .setVibrate(vibrationPattern)
-            .setProgress(100, progress, false)
             .setSound(
                 RingtoneManager.getDefaultUri(
-                    if (_currentPhase.value == Phase.FOCUS) RingtoneManager.TYPE_RINGTONE
+                    if (phaseIsFocus) RingtoneManager.TYPE_RINGTONE
                     else RingtoneManager.TYPE_NOTIFICATION
                 )
             )
-            // Botones
-            .addAction(R.drawable.baseline_pause_circle_24, "Pausar", pausePendingIntent)
-            .addAction(R.drawable.ic_resume, "Reanudar", resumePendingIntent)
-            .addAction(R.drawable.ic_stop, "Terminar", endPendingIntent)
+            .setContentIntent(pendingIntent)
+            .setStyle(bigTextStyle)     // <<< Estilo más elegante
+            .setLargeIcon(bigImage)
+            .setLights(notificationColor, 900, 900)
+            .addAction(R.drawable.baseline_pause_circle_24, "Pausar", PendingIntent.getBroadcast(context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE))
+            .addAction(R.drawable.ic_resume, "Reanudar", PendingIntent.getBroadcast(context, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE))
+            .addAction(R.drawable.ic_stop, "Terminar", PendingIntent.getBroadcast(context, 3, endIntent, PendingIntent.FLAG_IMMUTABLE))
 
-        if (_currentPhase.value == Phase.BREAK) {
+        if (!phaseIsFocus) {
             builder.addAction(
                 R.drawable.ic_skip,
-                "Saltar Descanso",
-                skipPendingIntent
+                "Saltar descanso",
+                PendingIntent.getBroadcast(context, 4, skipIntent, PendingIntent.FLAG_IMMUTABLE)
             )
         }
 
-        with(NotificationManagerCompat.from(context)) {
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-            ) {
-                notify(MainActivity.NOTIFICATION_ID, builder.build())
-            }
+        val notificationManager = NotificationManagerCompat.from(context)
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationManager.notify(MainActivity.NOTIFICATION_ID, builder.build())
         }
     }
+
 }
