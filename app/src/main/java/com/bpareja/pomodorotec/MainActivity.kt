@@ -8,40 +8,58 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.bpareja.pomodorotec.pomodoro.PomodoroViewModel
-import androidx.activity.viewModels
 import com.bpareja.pomodorotec.pomodoro.PomodoroScreen
-
+import com.bpareja.pomodorotec.components.ChatbotBubble
+import com.bpareja.pomodorotec.components.ChatbotPanel
+import com.example.pomodorotec.viewmodel.ChatbotViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val viewModel: PomodoroViewModel by viewModels()
-
+    private val pomodoroViewModel: PomodoroViewModel by viewModels()
+    private val chatbotViewModel = ChatbotViewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel.updateTimerData()
+        pomodoroViewModel.updateTimerData()
 
         setContent {
-            PomodoroScreen(viewModel)
+            Box(modifier = Modifier.fillMaxSize()) {
+
+                // ⏳ TU UI PRINCIPAL
+                PomodoroScreen(pomodoroViewModel)
+
+                // 🟣 BURBUJA DEL CHATBOT (abajo a la derecha)
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(20.dp)
+                ) {
+                    ChatbotBubble(chatbotViewModel)
+                }
+
+                // 📩 PANEL DEL CHATBOT
+                ChatbotPanel(chatbotViewModel)
+            }
         }
-        // Crear el canal de notificaciones
+
         createNotificationChannel()
-        // Solicitar permiso para notificaciones en Android 13+
         requestNotificationPermission()
-
-        }
-
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val name = "Canal Pomodoro"
             val descriptionText = "Notificaciones para el temporizador Pomodoro"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+            val channel = NotificationChannel(CHANNEL_ID, name, NotificationManager.IMPORTANCE_HIGH).apply {
                 description = descriptionText
             }
             val notificationManager: NotificationManager =
