@@ -24,6 +24,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         viewModel.updateTimerData()
+        viewModel.loadTodayCompletedSessions()
 
         setContent {
             PomodoroScreen(viewModel)

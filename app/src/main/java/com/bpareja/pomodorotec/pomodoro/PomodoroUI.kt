@@ -55,6 +55,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import kotlin.math.sin
 
+//hola
 @Composable
 fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     // Estados observables que controlan la UI
@@ -64,6 +65,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
+    val todaySessions by viewModel.todayCompletedSessions.observeAsState(0)
 
     // Contenedor principal con tema
     PomodoroTecTheme(darkTheme = isDarkTheme) {
@@ -124,6 +126,13 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Sesiones completadas hoy: $todaySessions",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center
+                )
                 Text(
                     text = "Alterna intervalos de 25 minutos de concentración y 5 minutos de descanso para mejorar tu productividad.",
                     fontSize = 16.sp,

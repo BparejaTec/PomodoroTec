@@ -23,11 +23,13 @@ class PomodoroWidgetProvider : AppWidgetProvider() {
             val phase = prefs.getString("phase", "Concentración") ?: "Concentración"
             val timeLeft = prefs.getString("timeLeft", "25:00") ?: "25:00"
             val progress = prefs.getInt("progress", 0)
+            val today = prefs.getInt("todaySessions", 0)
 
             val views = RemoteViews(context.packageName, R.layout.widget_pomodoro)
             views.setTextViewText(R.id.widget_phase, phase)
             views.setTextViewText(R.id.widget_time, timeLeft)
             views.setProgressBar(R.id.widget_progress, 100, progress, false)
+            views.setTextViewText(R.id.widget_today_sessions, "Sesiones Completadas Hoy: $today")
 
             // Botón para abrir la app principal
             val intent = Intent(context, MainActivity::class.java)

@@ -56,6 +56,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     private val _progress = MutableLiveData(0f) // Progreso (0-1)
     val progress: LiveData<Float> = _progress
 
+    private val _todayCompletedSessions = MutableLiveData(0)
+    val todayCompletedSessions: LiveData<Int> = _todayCompletedSessions
+
     // Variables de control del timer
     private var countDownTimer: CountDownTimer? = null
 
@@ -107,7 +110,10 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 _isRunning.value = false
                 _progress.value = 1f
                 when (_currentPhase.value) {
-                    Phase.FOCUS -> startBreakSession()
+                    Phase.FOCUS -> {
+                        incrementTodayCompletedSessions()
+                        startBreakSession()
+                    }
                     Phase.BREAK -> startFocusSession()
                     null -> {}
                 }
@@ -159,6 +165,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             putString("phase", _currentPhase.value?.let { if (it == Phase.FOCUS) "Concentración" else "Descanso" } ?: "Concentración")
             putString("timeLeft", _timeLeft.value ?: "25:00")
             putInt("progress", ((1f - (timeRemainingInMillis.toFloat() / totalTimeInMillis.toFloat())) * 100).toInt())
+            putInt("todaySessions", _todayCompletedSessions.value ?: 0)
             apply()
         }
         // Fuerza actualización de widget
@@ -266,12 +273,30 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
 
         with(NotificationManagerCompat.from(context)) {
             if (ActivityCompat.checkSelfPermission(
-                    context,
-                    android.Manifest.permission.POST_NOTIFICATIONS
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
                 notify(MainActivity.NOTIFICATION_ID, builder.build())
             }
         }
+    }
+
+    private fun todayKey(): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
+        return "sessions_" + sdf.format(java.util.Date())
+    }
+
+    fun loadTodayCompletedSessions() {
+        val prefs = context.getSharedPreferences("sessions_prefs", Context.MODE_PRIVATE)
+        _todayCompletedSessions.value = prefs.getInt(todayKey(), 0)
+    }
+
+    private fun incrementTodayCompletedSessions() {
+        val prefs = context.getSharedPreferences("sessions_prefs", Context.MODE_PRIVATE)
+        val key = todayKey()
+        val current = prefs.getInt(key, 0) + 1
+        prefs.edit().putInt(key, current).apply()
+        _todayCompletedSessions.value = current
     }
 }

@@ -28,6 +28,17 @@
         android:gravity="center"
         android:layout_marginTop="8dp"/>
 
+    <TextView
+        android:id="@+id/widget_today_sessions"
+        android:text="Sesiones Completadas Hoy: 0"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/colorPrimary"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="6dp"/>
+
     <ProgressBar
         android:id="@+id/widget_progress"
         style="?android:attr/progressBarStyleHorizontal"
