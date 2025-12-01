@@ -67,9 +67,11 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     fun startFocusSession() {
         countDownTimer?.cancel()
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L
+
+        timeRemainingInMillis = 90 * 1000L
+
         totalTimeInMillis = timeRemainingInMillis
-        _timeLeft.value = "25:00"
+        _timeLeft.value = "01:30"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
         showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
@@ -99,6 +101,10 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 _timeLeft.value = String.format("%02d:%02d", minutes, seconds)
                 val progress = 1f - (millisUntilFinished.toFloat() / totalTimeInMillis.toFloat())
                 _progress.value = progress
+                val secondsUntilFinished = millisUntilFinished / 1000
+                if (secondsUntilFinished == 60L) {
+                    showSoftWarningNotification()
+                }
 
                 // ----------- GUARDAR DATOS PARA EL WIDGET -------------
                 updateWidgetData()
@@ -148,6 +154,29 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _isSkipBreakButtonVisible.value = false
         // Actualizar widget aquí también si quieres
         updateWidgetData()
+    }
+
+    private fun showSoftWarningNotification() {
+        val phaseText = when (_currentPhase.value) {
+            Phase.FOCUS -> "Concéntrate: te queda 1 minuto para terminar el trabajo."
+            Phase.BREAK -> "Descanso: 1 minuto restante antes de volver al trabajo."
+            else -> "Un minuto restante."
+        }
+
+        val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+            .setSmallIcon(R.drawable.baseline_timer_24)
+            .setContentTitle("¡Aviso de Transición!")
+            .setContentText(phaseText)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setVibrate(null)
+            .setSound(null)
+            .setAutoCancel(true)
+
+        with(NotificationManagerCompat.from(context)) {
+            if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                notify(99, builder.build())
+            }
+        }
     }
 
     // -------------- ACTUALIZACIÓN DE WIDGET -----------------
