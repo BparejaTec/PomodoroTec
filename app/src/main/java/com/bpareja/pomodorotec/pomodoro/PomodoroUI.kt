@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
@@ -64,6 +65,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
+    val rewardToShow by viewModel.rewardToShow.observeAsState()
+    val completedSessions by viewModel.completedSessions.observeAsState(0)
 
     // Contenedor principal con tema
     PomodoroTecTheme(darkTheme = isDarkTheme) {
@@ -156,6 +159,13 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Sesiones completadas: $completedSessions",
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Contenedor con padding y sombra para la barra de progreso
                 Box(
@@ -248,6 +258,12 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             ) {
                 Text("Actualizar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
+        }
+        rewardToShow?.let { reward ->
+            MotivationRewardDialog(
+                reward = reward,
+                onDismiss = { viewModel.acknowledgeReward() }
+            )
         }
     }
 }
@@ -348,5 +364,48 @@ fun AnimatedWave(
         }
         drawPath(path = path, color = color.copy(alpha = 0.6f))
     }
+}
+
+@Composable
+fun MotivationRewardDialog(
+    reward: MotivationReward,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(onClick = onDismiss) {
+                Text("Seguir enfocando", fontWeight = FontWeight.Bold)
+            }
+        },
+        title = {
+            Text(
+                text = reward.headline,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Image(
+                    painter = painterResource(id = reward.imageRes),
+                    contentDescription = reward.headline,
+                    modifier = Modifier
+                        .size(160.dp)
+                        .padding(bottom = 12.dp)
+                )
+                Text(
+                    text = reward.message,
+                    textAlign = TextAlign.Center,
+                    fontSize = 18.sp
+                )
+            }
+        }
+    )
 }
 

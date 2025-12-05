@@ -35,6 +35,11 @@ class MainActivity : ComponentActivity() {
 
         }
 
+    override fun onStop() {
+        super.onStop()
+        viewModel.persistState()
+    }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
