@@ -7,29 +7,40 @@ import com.google.android.gms.wearable.Wearable
 
 object DataSyncManager {
 
-    /**
-     * Enviar datos de Pomodoro al móvil.
-     * @param context Contexto de la aplicación.
-     * @param sessionDuration Duración de la sesión en minutos.
-     * @param breakDuration Duración del descanso en minutos.
-     */
     fun sendPomodoroData(context: Context, sessionDuration: Int, breakDuration: Int) {
         val dataClient: DataClient = Wearable.getDataClient(context)
-        val putDataMapRequest = PutDataMapRequest.create("/pomodoro_data")
-        putDataMapRequest.dataMap.putInt("session_duration", sessionDuration)
-        putDataMapRequest.dataMap.putInt("break_duration", breakDuration)
-        dataClient.putDataItem(putDataMapRequest.asPutDataRequest())
+        val putDataMapRequest = PutDataMapRequest.create("/pomodoro_data").apply {
+            dataMap.putInt("session_duration", sessionDuration)
+            dataMap.putInt("break_duration", breakDuration)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
+        }
+        dataClient.putDataItem(putDataMapRequest.asPutDataRequest().setUrgent())
     }
 
-    /**
-     * Enviar una acción al móvil (por ejemplo, iniciar o pausar el temporizador).
-     * @param context Contexto de la aplicación.
-     * @param action Acción a enviar (e.g., "start_timer", "pause_timer").
-     */
+    fun sendTimerState(
+        context: Context,
+        timeLeft: String,
+        phase: String,
+        isRunning: Boolean,
+        progress: Float
+    ) {
+        val dataClient: DataClient = Wearable.getDataClient(context)
+        val putDataMapRequest = PutDataMapRequest.create("/pomodoro_state").apply {
+            dataMap.putString("time_left", timeLeft)
+            dataMap.putString("phase", phase)
+            dataMap.putBoolean("is_running", isRunning)
+            dataMap.putFloat("progress", progress)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
+        }
+        dataClient.putDataItem(putDataMapRequest.asPutDataRequest().setUrgent())
+    }
+
     fun sendAction(context: Context, action: String) {
         val dataClient: DataClient = Wearable.getDataClient(context)
-        val putDataMapRequest = PutDataMapRequest.create("/pomodoro_action")
-        putDataMapRequest.dataMap.putString("action", action) // Añadir la acción
-        dataClient.putDataItem(putDataMapRequest.asPutDataRequest()) // Enviar la acción
+        val putDataMapRequest = PutDataMapRequest.create("/pomodoro_action").apply {
+            dataMap.putString("action", action)
+            dataMap.putLong("timestamp", System.currentTimeMillis())
+        }
+        dataClient.putDataItem(putDataMapRequest.asPutDataRequest().setUrgent())
     }
 }
