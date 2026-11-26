@@ -68,9 +68,6 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.compose.material)
-    implementation(project(":app"))
-    implementation(project(":app"))
-    // implementation(project(":app"))
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
