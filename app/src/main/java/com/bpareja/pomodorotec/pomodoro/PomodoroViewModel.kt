@@ -1,4 +1,4 @@
-package com.bpareja.pomodorotec.pomodoro
+﻿package com.bpareja.pomodorotec.pomodoro
 
 import android.app.Application
 import android.app.PendingIntent
@@ -34,7 +34,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     companion object {
         internal var instance: PomodoroViewModel? = null
         fun skipBreak() {
-            instance?.startFocusSession()  // Saltar el descanso y comenzar sesión de concentración
+            instance?.startFocusSession()  // Saltar el descanso y comenzar sesiÃ³n de concentraciÃ³n
         }
     }
 
@@ -50,7 +50,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     private val _currentPhase = MutableLiveData(Phase.FOCUS)// Fase actual
     val currentPhase: LiveData<Phase> = _currentPhase
 
-    private val _isSkipBreakButtonVisible = MutableLiveData(false)// Visibilidad botón saltar
+    private val _isSkipBreakButtonVisible = MutableLiveData(false)// Visibilidad botÃ³n saltar
     val isSkipBreakButtonVisible: LiveData<Boolean> = _isSkipBreakButtonVisible
 
     private val _progress = MutableLiveData(0f) // Progreso (0-1)
@@ -72,7 +72,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "25:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
-        showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
+        showNotification("Inicio de ConcentraciÃ³n", "La sesiÃ³n de concentraciÃ³n ha comenzado.")
         startTimer()
     }
 
@@ -83,7 +83,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "05:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = true
-        showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
+        showNotification("Inicio de Descanso", "La sesiÃ³n de descanso ha comenzado.")
         startTimer()
     }
 
@@ -134,7 +134,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     fun pauseTimer() {
         countDownTimer?.cancel()
         _isRunning.value = false
-        // Actualizar notificación si quieres aquí
+        // Actualizar notificaciÃ³n si quieres aquÃ­
     }
 
     fun resetTimer() {
@@ -146,22 +146,22 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "25:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
-        // Actualizar widget aquí también si quieres
+        // Actualizar widget aquÃ­ tambiÃ©n si quieres
         updateWidgetData()
     }
 
-    // -------------- ACTUALIZACIÓN DE WIDGET -----------------
+    // -------------- ACTUALIZACIÃ“N DE WIDGET -----------------
 
     private fun updateWidgetData() {
         // Guarda datos en SharedPreferences
         val prefs = context.getSharedPreferences("pomodoro_prefs", Context.MODE_PRIVATE)
         prefs.edit().apply {
-            putString("phase", _currentPhase.value?.let { if (it == Phase.FOCUS) "Concentración" else "Descanso" } ?: "Concentración")
+            putString("phase", _currentPhase.value?.let { if (it == Phase.FOCUS) "ConcentraciÃ³n" else "Descanso" } ?: "ConcentraciÃ³n")
             putString("timeLeft", _timeLeft.value ?: "25:00")
             putInt("progress", ((1f - (timeRemainingInMillis.toFloat() / totalTimeInMillis.toFloat())) * 100).toInt())
             apply()
         }
-        // Fuerza actualización de widget
+        // Fuerza actualizaciÃ³n de widget
         val intent = Intent(context, com.bpareja.pomodorotec.PomodoroWidgetProvider::class.java)
         intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
         val ids = AppWidgetManager.getInstance(context)
@@ -170,7 +170,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         context.sendBroadcast(intent)
     }
 
-    // ----------------- NOTIFICACIÓN AVANZADA ------------------------
+    // ----------------- NOTIFICACIÃ“N AVANZADA ------------------------
 
     private fun showNotification(title: String, message: String) {
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -181,14 +181,14 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         )
 
         val customTitle = when (_currentPhase.value) {
-            Phase.FOCUS -> "🎯 ¡Tiempo de Concentración!"
-            Phase.BREAK -> "☕ ¡Momento de Descanso!"
+            Phase.FOCUS -> "ðŸŽ¯ Â¡Tiempo de ConcentraciÃ³n!"
+            Phase.BREAK -> "â˜• Â¡Momento de Descanso!"
             else -> title
         }
         val formattedTime = _timeLeft.value?.let { if (it != "00:00") it else "Finalizado" } ?: "25:00"
         val customMessage = when (_currentPhase.value) {
-            Phase.FOCUS -> "⏰ Restan $formattedTime\n💪 ¡Mantén el enfoque!"
-            Phase.BREAK -> "⏰ Restan $formattedTime\n🧘‍♂️ ¡Relájate unos minutos!"
+            Phase.FOCUS -> "â° Restan $formattedTime\nðŸ’ª Â¡MantÃ©n el enfoque!"
+            Phase.BREAK -> "â° Restan $formattedTime\nðŸ§˜â€â™‚ï¸ Â¡RelÃ¡jate unos minutos!"
             else -> message
         }
         val bigImage = BitmapFactory.decodeResource(
@@ -196,7 +196,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             if (_currentPhase.value == Phase.FOCUS) R.drawable.focus_image
             else R.drawable.break_image
         )
-        val style = NotificationCompat.BigPictureStyle().bigPicture(bigImage)
+        val style = NotificationCompat.BigPictureStyle().bigPicture(bigImage).setBigContentTitle(customTitle).setSummaryText("$customMessage - ¡Sigue así, mantén el enfoque!")
 
         val notificationColor = if (_currentPhase.value == Phase.FOCUS) Color.rgb(178, 34, 34) else Color.rgb(46, 139, 87)
 
@@ -233,7 +233,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 if (_currentPhase.value == Phase.FOCUS) R.drawable.baseline_center_focus_strong_24
                 else R.drawable.baseline_free_breakfast_24
             )
-            .setContentTitle(customTitle)
+            .setContentTitle(customTitle).setSubText("PomodoroTec • Sesión Activa")
             .setContentText(customMessage)
             .setStyle(style)
             .setPriority(NotificationCompat.PRIORITY_MAX)
@@ -275,3 +275,4 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         }
     }
 }
+
