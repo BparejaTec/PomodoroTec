@@ -54,6 +54,8 @@ import com.bpareja.pomodorotec.ui.theme.PomodoroTecTheme
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.graphics.Path
 import kotlin.math.sin
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 
 @Composable
 fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
@@ -64,6 +66,10 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
+    val phaseColor by animateColorAsState(
+        targetValue = if (currentPhase == Phase.FOCUS) Color(0xFFB22222) else Color(0xFF2E8B57),
+        animationSpec = tween(durationMillis = 800)
+    )
 
     // Contenedor principal con tema
     PomodoroTecTheme(darkTheme = isDarkTheme) {
@@ -134,16 +140,18 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
 
                 Spacer(modifier = Modifier.height(32.dp))
                 // Indicador de fase actual
-                Text(
-                    text = when (currentPhase) {
-                        Phase.FOCUS -> "Tiempo de concentración"
-                        Phase.BREAK -> "Tiempo de descanso"
-                    },
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center
-                )
+                Crossfade(targetState = currentPhase, animationSpec = tween(800)) { phase ->
+                    Text(
+                        text = when (phase) {
+                            Phase.FOCUS -> "Tiempo de concentración"
+                            Phase.BREAK -> "Tiempo de descanso"
+                        },
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = phaseColor,
+                        textAlign = TextAlign.Center
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 // Timer grande
@@ -186,7 +194,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
 
                 Spacer(modifier = Modifier.height(16.dp))
                 AnimatedWave(
-                    color = if (currentPhase == Phase.FOCUS) Color(0xFFB22222) else Color(0xFF2E8B57),
+                    color = phaseColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(100.dp) // altura ajustable
