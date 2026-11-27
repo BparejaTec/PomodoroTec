@@ -63,6 +63,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS) // Fase actual (FOCUS/BREAK)
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
+    var quickTestMode by remember { mutableStateOf(viewModel.isQuickTestModeEnabled()) }
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
 
     // Contenedor principal con tema
@@ -74,6 +75,30 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             // Switch de tema oscuro en la esquina superior derecha
+            Row(
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Prueba rápida",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(end = 8.dp),
+                    fontSize = 14.sp
+                )
+                Switch(
+                    checked = quickTestMode,
+                    onCheckedChange = {
+                        quickTestMode = it
+                        viewModel.setQuickTestMode(it)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onBackground,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -244,7 +269,8 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                     val breakDuration = 5    // Puedes reemplazarlo con la duración configurada por el usuario
                     viewModel.updateDurations(sessionDuration, breakDuration)
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
             ) {
                 Text("Actualizar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
