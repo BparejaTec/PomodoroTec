@@ -60,11 +60,30 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     private var countDownTimer: CountDownTimer? = null
 
     private var quickTestMode = false
+    private val durationPreferences = context.getSharedPreferences("pomodoro_prefs", Context.MODE_PRIVATE)
+    private var customFocusMinutes = durationPreferences.getInt("focusDurationMinutes", 25).coerceIn(1, 180)
+    private var customBreakMinutes = durationPreferences.getInt("breakDurationMinutes", 5).coerceIn(1, 60)
     private var totalTimeInMillis: Long = 25 * 60 * 1000L // Tiempo total (25 min)
     private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
 
-    private fun focusDurationMillis() = if (quickTestMode) 25_000L else 25 * 60 * 1000L
-    private fun breakDurationMillis() = if (quickTestMode) 5_000L else 5 * 60 * 1000L
+    private fun focusDurationMillis() = if (quickTestMode) 25_000L else customFocusMinutes * 60_000L
+    private fun breakDurationMillis() = if (quickTestMode) 5_000L else customBreakMinutes * 60_000L
+
+    fun getFocusDurationMinutes() = customFocusMinutes
+    fun getBreakDurationMinutes() = customBreakMinutes
+
+    fun setCustomDurations(focusMinutes: Int, breakMinutes: Int): Boolean {
+        if (_isRunning.value == true || focusMinutes !in 1..180 || breakMinutes !in 1..60) return false
+        customFocusMinutes = focusMinutes
+        customBreakMinutes = breakMinutes
+        durationPreferences.edit()
+            .putInt("focusDurationMinutes", focusMinutes)
+            .putInt("breakDurationMinutes", breakMinutes)
+            .apply()
+        updateDurations(focusMinutes, breakMinutes)
+        resetTimer()
+        return true
+    }
 
     fun setQuickTestMode(enabled: Boolean) {
         if (_isRunning.value == true) return
@@ -136,8 +155,8 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     fun updateTimerData() {
         DataSyncManager.sendPomodoroData(
             context = getApplication(),
-            sessionDuration = 25,
-            breakDuration = 5
+            sessionDuration = customFocusMinutes,
+            breakDuration = customBreakMinutes
         )
     }
 
