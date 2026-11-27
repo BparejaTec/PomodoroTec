@@ -27,42 +27,46 @@ enum class Phase {
 }
 
 class PomodoroViewModel(application: Application) : AndroidViewModel(application) {
+
     init {
         instance = this
     }
-    // Singleton para acceder al ViewModel desde el BroadcastReceiver
+
     companion object {
         internal var instance: PomodoroViewModel? = null
+
         fun skipBreak() {
-            instance?.startFocusSession()  // Saltar el descanso y comenzar sesión de concentración
+            instance?.startFocusSession()
         }
     }
 
     private val context = getApplication<Application>().applicationContext
 
-    // Estados observables (LiveData)
-    private val _timeLeft = MutableLiveData("25:00") // Tiempo mostrado en UI
+    // Estados observables
+
+    private val _timeLeft = MutableLiveData("25:00")
     val timeLeft: LiveData<String> = _timeLeft
 
-    private val _isRunning = MutableLiveData(false) // Estado del timer
+    private val _isRunning = MutableLiveData(false)
     val isRunning: LiveData<Boolean> = _isRunning
 
-    private val _currentPhase = MutableLiveData(Phase.FOCUS)// Fase actual
+    private val _currentPhase = MutableLiveData(Phase.FOCUS)
     val currentPhase: LiveData<Phase> = _currentPhase
 
-    private val _isSkipBreakButtonVisible = MutableLiveData(false)// Visibilidad botón saltar
+    private val _isSkipBreakButtonVisible = MutableLiveData(false)
     val isSkipBreakButtonVisible: LiveData<Boolean> = _isSkipBreakButtonVisible
 
-    private val _progress = MutableLiveData(0f) // Progreso (0-1)
+    private val _progress = MutableLiveData(0f)
     val progress: LiveData<Float> = _progress
 
-    // Variables de control del timer
+    // Variables del cronómetro
+
     private var countDownTimer: CountDownTimer? = null
 
-    private var totalTimeInMillis: Long = 25 * 60 * 1000L // Tiempo total (25 min)
-    private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
+    private var totalTimeInMillis: Long = 25 * 60 * 1000L
+    private var timeRemainingInMillis: Long = 25 * 60 * 1000L
 
-    // ----------- FUNCIONES PRINCIPALES ------------
+    // Inicio de concentración
 
     fun startFocusSession() {
         countDownTimer?.cancel()
@@ -72,9 +76,16 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "25:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
-        showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
+
+        showNotification(
+            "Inicio de concentración",
+            "La sesión de concentración ha comenzado."
+        )
+
         startTimer()
     }
+
+    // Inicio de descanso
 
     private fun startBreakSession() {
         _currentPhase.value = Phase.BREAK
@@ -83,39 +94,63 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "05:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = true
-        showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
+
+        showNotification(
+            "Inicio de descanso",
+            "La sesión de descanso ha comenzado."
+        )
+
         startTimer()
     }
+
+    // Funcionamiento del cronómetro
 
     fun startTimer() {
         countDownTimer?.cancel()
         _isRunning.value = true
 
-        countDownTimer = object : CountDownTimer(timeRemainingInMillis, 1000) {
+        countDownTimer = object : CountDownTimer(
+            timeRemainingInMillis, 1000
+        ) {
             override fun onTick(millisUntilFinished: Long) {
+
                 timeRemainingInMillis = millisUntilFinished
+
                 val minutes = (millisUntilFinished / 1000) / 60
                 val seconds = (millisUntilFinished / 1000) % 60
-                _timeLeft.value = String.format("%02d:%02d", minutes, seconds)
-                val progress = 1f - (millisUntilFinished.toFloat() / totalTimeInMillis.toFloat())
+
+                _timeLeft.value = String.format(
+                    "%02d:%02d", minutes, seconds
+                )
+
+                val progress = 1f - (
+                        millisUntilFinished.toFloat() /
+                                totalTimeInMillis.toFloat()
+                        )
+
                 _progress.value = progress
 
-                // ----------- GUARDAR DATOS PARA EL WIDGET -------------
                 updateWidgetData()
             }
+
             override fun onFinish() {
                 _isRunning.value = false
                 _progress.value = 1f
+
                 when (_currentPhase.value) {
                     Phase.FOCUS -> startBreakSession()
                     Phase.BREAK -> startFocusSession()
                     null -> {}
                 }
             }
+
         }.start()
     }
 
-    fun updateDurations(sessionDuration: Int, breakDuration: Int) {
+    fun updateDurations(
+        sessionDuration: Int,
+        breakDuration: Int
+    ) {
         DataSyncManager.sendPomodoroData(
             context = getApplication(),
             sessionDuration = sessionDuration,
@@ -131,11 +166,14 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         )
     }
 
+    // Pausar cronómetro
+
     fun pauseTimer() {
         countDownTimer?.cancel()
         _isRunning.value = false
-        // Actualizar notificación si quieres aquí
     }
+
+    // Reiniciar cronómetro
 
     fun resetTimer() {
         countDownTimer?.cancel()
@@ -146,92 +184,223 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         _timeLeft.value = "25:00"
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
-        // Actualizar widget aquí también si quieres
+
         updateWidgetData()
     }
 
-    // -------------- ACTUALIZACIÓN DE WIDGET -----------------
+    // Actualización del widget
 
     private fun updateWidgetData() {
-        // Guarda datos en SharedPreferences
-        val prefs = context.getSharedPreferences("pomodoro_prefs", Context.MODE_PRIVATE)
+
+        val prefs = context.getSharedPreferences(
+            "pomodoro_prefs",
+            Context.MODE_PRIVATE
+        )
+
         prefs.edit().apply {
-            putString("phase", _currentPhase.value?.let { if (it == Phase.FOCUS) "Concentración" else "Descanso" } ?: "Concentración")
-            putString("timeLeft", _timeLeft.value ?: "25:00")
-            putInt("progress", ((1f - (timeRemainingInMillis.toFloat() / totalTimeInMillis.toFloat())) * 100).toInt())
+
+            putString(
+                "phase",
+                _currentPhase.value?.let {
+                    if (it == Phase.FOCUS)
+                        "Concentración"
+                    else
+                        "Descanso"
+                } ?: "Concentración"
+            )
+
+            putString(
+                "timeLeft",
+                _timeLeft.value ?: "25:00"
+            )
+
+            putInt(
+                "progress",
+                ((1f - (
+                        timeRemainingInMillis.toFloat() /
+                                totalTimeInMillis.toFloat()
+                        )) * 100).toInt()
+            )
+
             apply()
         }
-        // Fuerza actualización de widget
-        val intent = Intent(context, com.bpareja.pomodorotec.PomodoroWidgetProvider::class.java)
+
+        val intent = Intent(
+            context,
+            com.bpareja.pomodorotec.PomodoroWidgetProvider::class.java
+        )
+
         intent.action = AppWidgetManager.ACTION_APPWIDGET_UPDATE
+
         val ids = AppWidgetManager.getInstance(context)
-            .getAppWidgetIds(ComponentName(context, com.bpareja.pomodorotec.PomodoroWidgetProvider::class.java))
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+            .getAppWidgetIds(
+                ComponentName(
+                    context,
+                    com.bpareja.pomodorotec.PomodoroWidgetProvider::class.java
+                )
+            )
+
+        intent.putExtra(
+            AppWidgetManager.EXTRA_APPWIDGET_IDS,
+            ids
+        )
+
         context.sendBroadcast(intent)
     }
 
-    // ----------------- NOTIFICACIÓN AVANZADA ------------------------
+    // NOTIFICACIONES PERSONALIZADAS
 
     private fun showNotification(title: String, message: String) {
-        val intent = Intent(context, MainActivity::class.java).apply {
+
+        val intent = Intent(
+            context,
+            MainActivity::class.java
+        ).apply {
             flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
         }
+
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
         )
+
+        // Nuevos títulos personalizados
 
         val customTitle = when (_currentPhase.value) {
-            Phase.FOCUS -> "🎯 ¡Tiempo de Concentración!"
-            Phase.BREAK -> "☕ ¡Momento de Descanso!"
+            Phase.FOCUS -> "🎯 ¡Hora de ser productivo!"
+            Phase.BREAK -> "☕ ¡Descanso merecido!"
             else -> title
         }
-        val formattedTime = _timeLeft.value?.let { if (it != "00:00") it else "Finalizado" } ?: "25:00"
+
+        val formattedTime = _timeLeft.value?.let {
+            if (it != "00:00") it else "Finalizado"
+        } ?: "25:00"
+
+        // Nuevos mensajes personalizados
+
         val customMessage = when (_currentPhase.value) {
-            Phase.FOCUS -> "⏰ Restan $formattedTime\n💪 ¡Mantén el enfoque!"
-            Phase.BREAK -> "⏰ Restan $formattedTime\n🧘‍♂️ ¡Relájate unos minutos!"
+
+            Phase.FOCUS ->
+                "Tiempo disponible: $formattedTime\n¡Sigue así, tú puedes!"
+
+            Phase.BREAK ->
+                "Tiempo de descanso: $formattedTime\n¡Recarga tus energías!"
+
             else -> message
         }
+
+        // Imagen según la fase
+
         val bigImage = BitmapFactory.decodeResource(
             context.resources,
-            if (_currentPhase.value == Phase.FOCUS) R.drawable.focus_image
-            else R.drawable.break_image
+            if (_currentPhase.value == Phase.FOCUS)
+                R.drawable.focus_image
+            else
+                R.drawable.break_image
         )
-        val style = NotificationCompat.BigPictureStyle().bigPicture(bigImage)
 
-        val notificationColor = if (_currentPhase.value == Phase.FOCUS) Color.rgb(178, 34, 34) else Color.rgb(46, 139, 87)
+        val style = NotificationCompat.BigPictureStyle()
+            .bigPicture(bigImage)
+            .setSummaryText(customMessage)
 
-        val vibrationPattern = if (_currentPhase.value == Phase.FOCUS)
-            longArrayOf(0, 100, 100, 100)
-        else
-            longArrayOf(0, 500, 500)
+        // Nuevos colores personalizados
 
-        // Intents para acciones
-        val pauseIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "PAUSE_TIMER" }
+        val notificationColor =
+            if (_currentPhase.value == Phase.FOCUS)
+                Color.rgb(33, 150, 243)
+            else
+                Color.rgb(156, 39, 176)
+
+        // Vibración personalizada
+
+        val vibrationPattern =
+            if (_currentPhase.value == Phase.FOCUS)
+                longArrayOf(0, 150, 100, 150)
+            else
+                longArrayOf(0, 300, 200, 300)
+
+        // Acción de pausar
+
+        val pauseIntent = Intent(
+            context,
+            PomodoroReceiver::class.java
+        ).apply {
+            action = "PAUSE_TIMER"
+        }
+
         val pausePendingIntent = PendingIntent.getBroadcast(
-            context, 1, pauseIntent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            1,
+            pauseIntent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
-        val resumeIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "RESUME_TIMER" }
+        // Acción de reanudar
+
+        val resumeIntent = Intent(
+            context,
+            PomodoroReceiver::class.java
+        ).apply {
+            action = "RESUME_TIMER"
+        }
+
         val resumePendingIntent = PendingIntent.getBroadcast(
-            context, 2, resumeIntent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            2,
+            resumeIntent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
-        val skipIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "SKIP_BREAK" }
+        // Acción de saltar descanso
+
+        val skipIntent = Intent(
+            context,
+            PomodoroReceiver::class.java
+        ).apply {
+            action = "SKIP_BREAK"
+        }
+
         val skipPendingIntent = PendingIntent.getBroadcast(
-            context, 3, skipIntent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            3,
+            skipIntent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
-        val endIntent = Intent(context, PomodoroReceiver::class.java).apply { action = "END_TIMER" }
+        // Acción de finalizar
+
+        val endIntent = Intent(
+            context,
+            PomodoroReceiver::class.java
+        ).apply {
+            action = "END_TIMER"
+        }
+
         val endPendingIntent = PendingIntent.getBroadcast(
-            context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE
+            context,
+            4,
+            endIntent,
+            PendingIntent.FLAG_IMMUTABLE
         )
 
-        val progress = ((timeRemainingInMillis * 100) / totalTimeInMillis).toInt()
+        val progress = (
+                (timeRemainingInMillis * 100) /
+                        totalTimeInMillis
+                ).toInt()
 
-        val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
+        // Creación de la notificación personalizada
+
+        val builder = NotificationCompat.Builder(
+            context,
+            MainActivity.CHANNEL_ID
+        )
             .setSmallIcon(
-                if (_currentPhase.value == Phase.FOCUS) R.drawable.baseline_center_focus_strong_24
-                else R.drawable.baseline_free_breakfast_24
+                if (_currentPhase.value == Phase.FOCUS)
+                    R.drawable.baseline_center_focus_strong_24
+                else
+                    R.drawable.baseline_free_breakfast_24
             )
             .setContentTitle(customTitle)
             .setContentText(customMessage)
@@ -247,30 +416,53 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             .setProgress(100, progress, false)
             .setSound(
                 RingtoneManager.getDefaultUri(
-                    if (_currentPhase.value == Phase.FOCUS) RingtoneManager.TYPE_RINGTONE
-                    else RingtoneManager.TYPE_NOTIFICATION
+                    if (_currentPhase.value == Phase.FOCUS)
+                        RingtoneManager.TYPE_RINGTONE
+                    else
+                        RingtoneManager.TYPE_NOTIFICATION
                 )
             )
-            // Botones
-            .addAction(R.drawable.baseline_pause_circle_24, "Pausar", pausePendingIntent)
-            .addAction(R.drawable.ic_resume, "Reanudar", resumePendingIntent)
-            .addAction(R.drawable.ic_stop, "Terminar", endPendingIntent)
+
+            // Botones personalizados
+
+            .addAction(
+                R.drawable.baseline_pause_circle_24,
+                "Pausar",
+                pausePendingIntent
+            )
+            .addAction(
+                R.drawable.ic_resume,
+                "Reanudar",
+                resumePendingIntent
+            )
+            .addAction(
+                R.drawable.ic_stop,
+                "Finalizar",
+                endPendingIntent
+            )
 
         if (_currentPhase.value == Phase.BREAK) {
             builder.addAction(
                 R.drawable.ic_skip,
-                "Saltar Descanso",
+                "Volver a estudiar",
                 skipPendingIntent
             )
         }
 
+        // Validación del permiso y envío
+
         with(NotificationManagerCompat.from(context)) {
+
             if (ActivityCompat.checkSelfPermission(
                     context,
                     android.Manifest.permission.POST_NOTIFICATIONS
                 ) == PackageManager.PERMISSION_GRANTED
             ) {
-                notify(MainActivity.NOTIFICATION_ID, builder.build())
+
+                notify(
+                    MainActivity.NOTIFICATION_ID,
+                    builder.build()
+                )
             }
         }
     }
