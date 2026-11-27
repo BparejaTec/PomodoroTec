@@ -25,8 +25,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -45,6 +47,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -63,6 +67,10 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
     val currentPhase by viewModel.currentPhase.observeAsState(Phase.FOCUS) // Fase actual (FOCUS/BREAK)
     val isSkipBreakButtonVisible by viewModel.isSkipBreakButtonVisible.observeAsState(false) // Visibilidad del botón saltar
     var isDarkTheme by remember { mutableStateOf(false) }             // Control del tema oscuro
+    var quickTestMode by remember { mutableStateOf(viewModel.isQuickTestModeEnabled()) }
+    var showDurationDialog by remember { mutableStateOf(false) }
+    var focusDurationInput by remember { mutableStateOf(viewModel.getFocusDurationMinutes().toString()) }
+    var breakDurationInput by remember { mutableStateOf(viewModel.getBreakDurationMinutes().toString()) }
     val progress by viewModel.progress.observeAsState(0f)             // Progreso de la barra (0f a 1f)
 
     // Contenedor principal con tema
@@ -74,6 +82,30 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             // Switch de tema oscuro en la esquina superior derecha
+            Row(
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Prueba rápida",
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.padding(end = 8.dp),
+                    fontSize = 14.sp
+                )
+                Switch(
+                    checked = quickTestMode,
+                    onCheckedChange = {
+                        quickTestMode = it
+                        viewModel.setQuickTestMode(it)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer,
+                        uncheckedThumbColor = MaterialTheme.colorScheme.onBackground,
+                        uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+            }
             Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -239,15 +271,54 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             }
 
             Button(
-                onClick = {
-                    val sessionDuration = 25 // Puedes reemplazarlo con la duración configurada por el usuario
-                    val breakDuration = 5    // Puedes reemplazarlo con la duración configurada por el usuario
-                    viewModel.updateDurations(sessionDuration, breakDuration)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                onClick = { showDurationDialog = true },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
             ) {
-                Text("Actualizar", color = Color(0xFFB22222), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Text("Duraciones", color = Color(0xFFB22222), fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
+        }
+
+        if (showDurationDialog) {
+            AlertDialog(
+                onDismissRequest = { showDurationDialog = false },
+                title = { Text("Personalizar duraciones") },
+                text = {
+                    Column {
+                        Text("Concentración (1–180 minutos)")
+                        OutlinedTextField(
+                            value = focusDurationInput,
+                            onValueChange = { focusDurationInput = it.filter(Char::isDigit).take(3) },
+                            label = { Text("Minutos de concentración") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Descanso (1–60 minutos)")
+                        OutlinedTextField(
+                            value = breakDurationInput,
+                            onValueChange = { breakDurationInput = it.filter(Char::isDigit).take(2) },
+                            label = { Text("Minutos de descanso") },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true
+                        )
+                    }
+                },
+                confirmButton = {
+                    Button(onClick = {
+                        val focusMinutes = focusDurationInput.toIntOrNull()
+                        val breakMinutes = breakDurationInput.toIntOrNull()
+                        if (focusMinutes != null && breakMinutes != null &&
+                            viewModel.setCustomDurations(focusMinutes, breakMinutes)
+                        ) {
+                            showDurationDialog = false
+                        }
+                    }) { Text("Guardar") }
+                },
+                dismissButton = {
+                    Button(onClick = { showDurationDialog = false }) { Text("Cancelar") }
+                }
+            )
         }
     }
 }

@@ -59,17 +59,48 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     // Variables de control del timer
     private var countDownTimer: CountDownTimer? = null
 
+    private var quickTestMode = false
+    private val durationPreferences = context.getSharedPreferences("pomodoro_prefs", Context.MODE_PRIVATE)
+    private var customFocusMinutes = durationPreferences.getInt("focusDurationMinutes", 25).coerceIn(1, 180)
+    private var customBreakMinutes = durationPreferences.getInt("breakDurationMinutes", 5).coerceIn(1, 60)
     private var totalTimeInMillis: Long = 25 * 60 * 1000L // Tiempo total (25 min)
     private var timeRemainingInMillis: Long = 25 * 60 * 1000L // Tiempo inicial para FOCUS
+
+    private fun focusDurationMillis() = if (quickTestMode) 25_000L else customFocusMinutes * 60_000L
+    private fun breakDurationMillis() = if (quickTestMode) 5_000L else customBreakMinutes * 60_000L
+
+    fun getFocusDurationMinutes() = customFocusMinutes
+    fun getBreakDurationMinutes() = customBreakMinutes
+
+    fun setCustomDurations(focusMinutes: Int, breakMinutes: Int): Boolean {
+        if (_isRunning.value == true || focusMinutes !in 1..180 || breakMinutes !in 1..60) return false
+        customFocusMinutes = focusMinutes
+        customBreakMinutes = breakMinutes
+        durationPreferences.edit()
+            .putInt("focusDurationMinutes", focusMinutes)
+            .putInt("breakDurationMinutes", breakMinutes)
+            .apply()
+        updateDurations(focusMinutes, breakMinutes)
+        resetTimer()
+        return true
+    }
+
+    fun setQuickTestMode(enabled: Boolean) {
+        if (_isRunning.value == true) return
+        quickTestMode = enabled
+        resetTimer()
+    }
+
+    fun isQuickTestModeEnabled() = quickTestMode
 
     // ----------- FUNCIONES PRINCIPALES ------------
 
     fun startFocusSession() {
         countDownTimer?.cancel()
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L
+        timeRemainingInMillis = focusDurationMillis()
         totalTimeInMillis = timeRemainingInMillis
-        _timeLeft.value = "25:00"
+        _timeLeft.value = formatTime(timeRemainingInMillis)
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
         showNotification("Inicio de Concentración", "La sesión de concentración ha comenzado.")
@@ -78,9 +109,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
 
     private fun startBreakSession() {
         _currentPhase.value = Phase.BREAK
-        timeRemainingInMillis = 5 * 60 * 1000L
+        timeRemainingInMillis = breakDurationMillis()
         totalTimeInMillis = timeRemainingInMillis
-        _timeLeft.value = "05:00"
+        _timeLeft.value = formatTime(timeRemainingInMillis)
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = true
         showNotification("Inicio de Descanso", "La sesión de descanso ha comenzado.")
@@ -94,9 +125,7 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         countDownTimer = object : CountDownTimer(timeRemainingInMillis, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 timeRemainingInMillis = millisUntilFinished
-                val minutes = (millisUntilFinished / 1000) / 60
-                val seconds = (millisUntilFinished / 1000) % 60
-                _timeLeft.value = String.format("%02d:%02d", minutes, seconds)
+                _timeLeft.value = formatTime(millisUntilFinished)
                 val progress = 1f - (millisUntilFinished.toFloat() / totalTimeInMillis.toFloat())
                 _progress.value = progress
 
@@ -126,8 +155,8 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     fun updateTimerData() {
         DataSyncManager.sendPomodoroData(
             context = getApplication(),
-            sessionDuration = 25,
-            breakDuration = 5
+            sessionDuration = customFocusMinutes,
+            breakDuration = customBreakMinutes
         )
     }
 
@@ -141,9 +170,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
         countDownTimer?.cancel()
         _isRunning.value = false
         _currentPhase.value = Phase.FOCUS
-        timeRemainingInMillis = 25 * 60 * 1000L
+        timeRemainingInMillis = focusDurationMillis()
         totalTimeInMillis = timeRemainingInMillis
-        _timeLeft.value = "25:00"
+        _timeLeft.value = formatTime(timeRemainingInMillis)
         _progress.value = 0f
         _isSkipBreakButtonVisible.value = false
         // Actualizar widget aquí también si quieres
@@ -226,7 +255,9 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
             context, 4, endIntent, PendingIntent.FLAG_IMMUTABLE
         )
 
-        val progress = ((timeRemainingInMillis * 100) / totalTimeInMillis).toInt()
+        val progress = (
+            (1f - timeRemainingInMillis.toFloat() / totalTimeInMillis.toFloat()) * 100
+        ).toInt().coerceIn(0, 100)
 
         val builder = NotificationCompat.Builder(context, MainActivity.CHANNEL_ID)
             .setSmallIcon(
@@ -273,5 +304,10 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 notify(MainActivity.NOTIFICATION_ID, builder.build())
             }
         }
+    }
+
+    private fun formatTime(milliseconds: Long): String {
+        val totalSeconds = (milliseconds / 1000).coerceAtLeast(0)
+        return String.format("%02d:%02d", totalSeconds / 60, totalSeconds % 60)
     }
 }
