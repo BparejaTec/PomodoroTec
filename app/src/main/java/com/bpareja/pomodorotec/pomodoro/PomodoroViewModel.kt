@@ -35,12 +35,26 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
     companion object {
         internal var instance: PomodoroViewModel? = null
 
+        // Configuración del recordatorio de hidratación
+        private const val HYDRATION_NOTIFICATION_ID = 200
+        private const val HYDRATION_INTERVAL = 3
+
         fun skipBreak() {
             instance?.startFocusSession()
         }
     }
 
     private val context = getApplication<Application>().applicationContext
+
+    // Contador de sesiones completadas
+
+    private val hydrationPrefs = context.getSharedPreferences(
+        "hydration_prefs",
+        Context.MODE_PRIVATE
+    )
+
+    private var completedSessions =
+        hydrationPrefs.getInt("completed_sessions", 0)
 
     // Estados observables
 
@@ -138,13 +152,91 @@ class PomodoroViewModel(application: Application) : AndroidViewModel(application
                 _progress.value = 1f
 
                 when (_currentPhase.value) {
-                    Phase.FOCUS -> startBreakSession()
+
+                    Phase.FOCUS -> {
+
+                        // Registrar sesión completada
+                        registerCompletedSession()
+
+                        // Iniciar descanso
+                        startBreakSession()
+
+                        // Mostrar recordatorio cada tres sesiones
+                        if (completedSessions % HYDRATION_INTERVAL == 0) {
+                            showHydrationNotification()
+                        }
+                    }
+
                     Phase.BREAK -> startFocusSession()
+
                     null -> {}
                 }
             }
 
         }.start()
+    }
+
+    // Registrar sesiones completadas
+
+    private fun registerCompletedSession() {
+
+        completedSessions++
+
+        hydrationPrefs.edit()
+            .putInt("completed_sessions", completedSessions)
+            .apply()
+    }
+
+    // NOTIFICACIÓN DE HIDRATACIÓN
+
+    private fun showHydrationNotification() {
+
+        val intent = Intent(
+            context,
+            MainActivity::class.java
+        ).apply {
+            flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            context,
+            200,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val hydrationMessage =
+            "Has completado $completedSessions sesiones de concentración. " +
+                    "Aprovecha tu descanso para beber agua."
+
+        val builder = NotificationCompat.Builder(
+            context,
+            MainActivity.CHANNEL_ID
+        )
+            .setSmallIcon(R.drawable.baseline_free_breakfast_24)
+            .setContentTitle("💧 ¡Hora de hidratarte!")
+            .setContentText(hydrationMessage)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(hydrationMessage)
+            )
+            .setColor(Color.rgb(33, 150, 243))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            NotificationManagerCompat.from(context)
+                .notify(
+                    HYDRATION_NOTIFICATION_ID,
+                    builder.build()
+                )
+        }
     }
 
     fun updateDurations(
