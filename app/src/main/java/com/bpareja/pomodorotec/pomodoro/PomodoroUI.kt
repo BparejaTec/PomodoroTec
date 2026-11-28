@@ -77,6 +77,7 @@ fun PomodoroScreen(viewModel: PomodoroViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
+                .background(phaseColor.copy(alpha = 0.08f))
                 .padding(16.dp)
         ) {
             // Switch de tema oscuro en la esquina superior derecha
